@@ -1,0 +1,13 @@
+# Virtual environment
+venv
+.venv
+env
+__pycache__/
+*.pyc
+.DS_Store # macOS
+*.swp # Vim
+*.swo # Vim
+.idea/ # PyCharm
+*.log
+/sessions/
+/instance/
