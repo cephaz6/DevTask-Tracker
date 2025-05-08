@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+
 # Get the database URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
+DATABASE_URL = "sqlite:///./devtask.db"
 engine = create_engine(DATABASE_URL, echo=True)
 
 #Dependency to get a session
