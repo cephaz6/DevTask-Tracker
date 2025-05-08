@@ -39,3 +39,38 @@ def create_task(task: TaskCreate, session: Session = Depends(get_session)):
         return new_task
     except Exception as e:
         raise HTTPException(status_code=400, detail="Failed to create task")
+    
+
+# Update a task    `PUT /tasks/{task_id}`
+@router.put("/{task_id}", response_model=TaskRead)
+def update_task(task_id: int, updated_task: TaskCreate, session: Session = Depends(get_session)):
+    try:
+        task = session.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        task.title = updated_task.title
+        task.description = updated_task.description
+        task.status = updated_task.status
+
+        session.add(task)
+        session.commit()
+        session.refresh(task)
+        return task
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update task")
+
+
+# Delete a task    `DELETE /tasks/{task_id}`
+@router.delete("/{task_id}")
+def delete_task(task_id: int, session: Session = Depends(get_session)):
+    try:
+        task = session.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        session.delete(task)
+        session.commit()
+        return {"message": "Task deleted successfully"}
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to delete task")
