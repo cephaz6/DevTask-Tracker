@@ -16,6 +16,17 @@ def get_tasks(session: Session = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch tasks")
 
+# Get a task by ID    `GET /tasks/{task_id}`
+@router.get("/{task_id}", response_model=TaskRead)
+def get_task(task_id: int, session: Session = Depends(get_session)):
+    try:
+        task = session.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        return task
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error fetching task")
+
 
 # Create a new task    `POST /tasks`
 @router.post("/", response_model=TaskRead)
