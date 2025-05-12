@@ -11,6 +11,7 @@ class UserCreate(BaseModel):
 # Schema for reading user information (response after authentication or user details)
 class UserRead(BaseModel):
     id: int
+    user_id: str  
     email: EmailStr
     full_name: Optional[str]
     is_active: bool

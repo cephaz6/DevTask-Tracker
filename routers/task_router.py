@@ -44,13 +44,14 @@ def create_task(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        new_task = Task(**task.model_dump(), user_id=current_user.id)
+        new_task = Task(**task.model_dump(), user_id=current_user.user_id)
         session.add(new_task)
         session.commit()
         session.refresh(new_task)
         return new_task
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error creating task")
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
+
     
 
 # Update a task    `PUT /tasks/{task_id}`

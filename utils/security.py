@@ -5,9 +5,10 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
-from sqlmodel import Session
+from sqlmodel import Session, select
 from models.user import User
 from db.database import get_session
+
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -26,21 +27,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # Utility function to decode JWT token and get user
-def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
+def get_current_user(session: Session = Depends(get_session), token: str = Depends(oauth2_scheme)) -> User:
     try:
-        # Decode the JWT token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        
-        # Query user from the database based on the decoded email
-        user = session.exec(User).filter(User.email == email).first()
-        
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+        statement = select(User).where(User.email == email)
+        user = session.exec(statement).first()
+
         if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        
+            raise HTTPException(status_code=401, detail="User not found")
+
         return user
+
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
