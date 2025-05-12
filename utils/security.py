@@ -35,7 +35,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
             raise HTTPException(status_code=401, detail="Invalid token")
         
         # Query user from the database based on the decoded email
-        user = session.query(User).filter(User.email == email).first()
+        user = session.exec(User).filter(User.email == email).first()
         
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")

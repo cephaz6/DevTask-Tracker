@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from db.database import get_session
+from models.user import User
 from models.task import Task
 from schemas.task import TaskCreate, TaskRead
+from db.database import get_session
+from utils.security import get_current_user
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -18,27 +20,37 @@ def get_tasks(session: Session = Depends(get_session)):
 
 # Get a task by ID    `GET /tasks/{task_id}`
 @router.get("/{task_id}", response_model=TaskRead)
-def get_task(task_id: int, session: Session = Depends(get_session)):
+def get_task(
+    task_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
     try:
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
+        if task.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to view this task")
         return task
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching task")
 
 
 # Create a new task    `POST /tasks`
 @router.post("/", response_model=TaskRead)
-def create_task(task: TaskCreate, session: Session = Depends(get_session)):
+def create_task(
+    task: TaskCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
     try:
-        new_task = Task.model_validate(task)
+        new_task = Task(**task.model_dump(), user_id=current_user.id)
         session.add(new_task)
         session.commit()
         session.refresh(new_task)
         return new_task
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Failed to create task")
+        raise HTTPException(status_code=500, detail="Error creating task")
     
 
 # Update a task    `PUT /tasks/{task_id}`
