@@ -39,7 +39,7 @@ def login_user(user: UserCreate, session: Session = Depends(get_session)):
     db_user = session.exec(statement).first()
 
     if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid Username or Password")
 
     # Update last login time
     db_user.last_login = datetime.now()

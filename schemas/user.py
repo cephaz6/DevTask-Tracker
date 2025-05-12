@@ -30,9 +30,9 @@ class UserLogin(BaseModel):
 
 # Schema for updating user details (email and password)
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None  # Optional to allow partial updates
-    password: Optional[str] = None  # Optional for updating password
-    full_name: Optional[str] = None  # Optional for updating full name
+    email: Optional[EmailStr] = None 
+    password: Optional[str] = None 
+    full_name: Optional[str] = None  
 
     class Config:
         orm_mode = True
