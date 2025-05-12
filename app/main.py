@@ -5,6 +5,11 @@ from db.database import init_db
 from routers import task_router
 from routers import auth_router as auth
 
+from dotenv import load_dotenv
+
+
+# Load environment variables from .env file
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
