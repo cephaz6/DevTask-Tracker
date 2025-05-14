@@ -17,6 +17,7 @@ class TaskRead(BaseModel):
     due_date: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+    user_id: str
 
     class Config:
         orm_mode = True

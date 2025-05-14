@@ -5,6 +5,8 @@ from models.task import Task
 from schemas.task import TaskCreate, TaskRead
 from db.database import get_session
 from utils.security import get_current_user
+from typing import List
+from datetime import datetime
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -35,6 +37,19 @@ def get_task(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching task")
 
+# Get all tasks for the current user    `GET /tasks/my-tasks`
+@router.get("/my-tasks", response_model=List[TaskRead])
+def get_my_tasks(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        statement = select(Task).where(Task.user_id == current_user.user_id)
+        tasks = session.exec(statement).all()
+        return tasks
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to fetch user's tasks")
+    
 
 # Create a new task    `POST /tasks`
 @router.post("/", response_model=TaskRead)
@@ -52,7 +67,7 @@ def create_task(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
-    
+   
 
 # Update a task    `PUT /tasks/{task_id}`
 @router.put("/{task_id}", response_model=TaskRead)

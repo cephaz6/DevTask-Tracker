@@ -11,4 +11,4 @@ class Task(SQLModel, table=True):
     due_date: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    user_id: int = Field(foreign_key="users.id")  
+    user_id: str = Field(foreign_key="users.id")  
