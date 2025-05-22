@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
+from models.user import User 
 
 class Task(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -11,4 +13,4 @@ class Task(SQLModel, table=True):
     due_date: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    user_id: str = Field(foreign_key="users.id")  
+    user_id: UUID = Field(foreign_key="users.user_id") 

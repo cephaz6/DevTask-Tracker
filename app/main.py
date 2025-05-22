@@ -15,7 +15,6 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     init_db()
     yield
-    # Cleanup code to be added here later.
 
 
 app = FastAPI(lifespan=lifespan)

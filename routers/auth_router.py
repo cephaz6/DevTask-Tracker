@@ -46,29 +46,55 @@ def login_user(user: UserCreate, session: Session = Depends(get_session)):
     session.commit()
 
     # Generate JWT token
-    access_token = create_access_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": db_user.user_id})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "sub": db_user.user_id}
 
 
 # Get current user (after logging in)
 @router.get("/me", response_model=UserRead)
 def get_user(session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    return current_user
+    # Create a dictionary that matches the UserRead schema
+    return {
+        "user_id": current_user.user_id, 
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "is_superuser": current_user.is_superuser,
+        "created_at": current_user.created_at,
+        "updated_at": current_user.updated_at,
+    
+    }
 
 
 # Update user profile
-@router.put("/update", response_model=UserRead)
-def update_user_profile(user_update: UserUpdate, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    # Update user details
-    statement = select(User).where(User.id == current_user.id)
-    db_user = session.exec(statement).first()
+@router.patch("/update", response_model=UserRead, summary="Update current user's profile")
+def update_user_profile(
+    user_update: UserUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Updates the profile of the currently authenticated user.
+    Only fields provided in the request body will be updated.
+    """
 
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if user_update.full_name is not None:
+        current_user.full_name = user_update.full_name
 
-    db_user.full_name = user_update.full_name or db_user.full_name
-    db_user.email = user_update.email or db_user.email
-    session.commit()
+    if user_update.email is not None:
+        email_exists = session.exec(select(User).where(User.email == user_update.email)).first()
+        if email_exists and email_exists.user_id != current_user.user_id:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        current_user.email = user_update.email
+    current_user.updated_at = datetime.now() 
 
-    return db_user
+    if user_update.password is not None:
+        current_user.hashed_password = hash_password(user_update.password)
+
+
+    session.add(current_user) 
+    session.commit() 
+    session.refresh(current_user) 
+
+    return current_user 

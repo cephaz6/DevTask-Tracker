@@ -38,17 +38,14 @@ def get_task(
         raise HTTPException(status_code=500, detail="Error fetching task")
 
 # Get all tasks for the current user    `GET /tasks/my-tasks`
-@router.get("/my-tasks", response_model=List[TaskRead])
+@router.get("/tasks/my-tasks")
 def get_my_tasks(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    try:
-        statement = select(Task).where(Task.user_id == current_user.user_id)
-        tasks = session.exec(statement).all()
-        return tasks
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to fetch user's tasks")
+    statement = select(Task).where(Task.user_id == current_user.user_id)
+    tasks = session.exec(statement).all()
+    return tasks
     
 
 # Create a new task    `POST /tasks`

@@ -7,6 +7,13 @@ class TaskCreate(BaseModel):
     description: Optional[str] = None
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
+    is_completed: bool = False
+    user_id: str
+    # user_id: str = Field(foreign_key="users.user_id")  # Foreign key to User table
+    # user: Optional[User] = Relationship(back_populates="tasks")  # Relationship to User model
+    
+
+
 
 class TaskRead(BaseModel):
     id: int
