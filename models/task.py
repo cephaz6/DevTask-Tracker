@@ -1,7 +1,9 @@
 # models/task.py
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, TYPE_CHECKING # Import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List # Import TYPE_CHECKING
 from datetime import datetime, timezone
+from models.tag import Tag, TaskTagLink # Assuming tag.py is in the same directory
+
 
 if TYPE_CHECKING:
     from .user import User # Assuming user.py is in the same directory
@@ -19,7 +21,8 @@ class Task(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = None 
 
-    user_id: str = Field(foreign_key="users.user_id", index=True) # Ensure this is 'str' to match User.user_id
+    user_id: str = Field(foreign_key="users.user_id", index=True) 
+    tags: List[Tag] = Relationship(back_populates="tasks", link_model=TaskTagLink)
 
     user: Optional["User"] = Relationship(back_populates="tasks")
 
