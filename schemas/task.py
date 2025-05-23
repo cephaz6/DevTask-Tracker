@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from typing import Optional
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 class TaskCreate(BaseModel):
@@ -8,12 +8,9 @@ class TaskCreate(BaseModel):
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
     is_completed: bool = False
-    user_id: str
-    # user_id: str = Field(foreign_key="users.user_id")  # Foreign key to User table
-    # user: Optional[User] = Relationship(back_populates="tasks")  # Relationship to User model
-    
 
-
+    class Config:
+        orm_mode = True 
 
 class TaskRead(BaseModel):
     id: int
@@ -24,7 +21,7 @@ class TaskRead(BaseModel):
     due_date: Optional[datetime]
     created_at: datetime
     updated_at: datetime
-    user_id: str
+    user_id: str 
 
     class Config:
-        orm_mode = True
+        model_config = {"from_attributes": True}

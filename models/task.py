@@ -1,16 +1,27 @@
+# models/task.py
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
-from datetime import datetime
-from uuid import UUID
-from models.user import User 
+from typing import Optional, TYPE_CHECKING # Import TYPE_CHECKING
+from datetime import datetime, timezone
+
+if TYPE_CHECKING:
+    from .user import User # Assuming user.py is in the same directory
 
 class Task(SQLModel, table=True):
+    __tablename__ = "tasks"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    title: str
+    title: str = Field(index=True)
     description: Optional[str] = None
     is_completed: bool = False
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    user_id: UUID = Field(foreign_key="users.user_id") 
+
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = None 
+
+    user_id: str = Field(foreign_key="users.user_id", index=True) # Ensure this is 'str' to match User.user_id
+
+    user: Optional["User"] = Relationship(back_populates="tasks")
+
+    def __repr__(self):
+        return f"<Task(id={self.id}, title='{self.title}', user_id='{self.user_id}')>"

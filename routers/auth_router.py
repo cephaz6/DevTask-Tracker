@@ -48,6 +48,7 @@ def login_user(user: UserCreate, session: Session = Depends(get_session)):
     # Generate JWT token
     access_token = create_access_token(data={"sub": db_user.user_id})
 
+    print(f"User {db_user.user_id} logged in successfully.")  # Debugging line
     return {"access_token": access_token, "token_type": "bearer", "sub": db_user.user_id}
 
 

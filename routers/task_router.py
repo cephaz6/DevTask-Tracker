@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 from models.user import User
 from models.task import Task
@@ -6,7 +7,8 @@ from schemas.task import TaskCreate, TaskRead
 from db.database import get_session
 from utils.security import get_current_user
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -19,6 +21,30 @@ def get_tasks(session: Session = Depends(get_session)):
         return tasks
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to fetch tasks")
+
+
+# Get all tasks for the current user    `GET /tasks/my-tasks`
+@router.get("/my-tasks", response_model=List[TaskRead])
+def get_my_tasks(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    print(f"Current user: {current_user.user_id}")  # Debugging line
+    try:
+        statement = select(Task).where(Task.user_id == current_user.user_id)  # <- corrected here
+        tasks = session.exec(statement).all()
+        return tasks
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not retrieve tasks due to a database error."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )
+
 
 # Get a task by ID    `GET /tasks/{task_id}`
 @router.get("/{task_id}", response_model=TaskRead)
@@ -36,34 +62,33 @@ def get_task(
         return task
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching task")
-
-# Get all tasks for the current user    `GET /tasks/my-tasks`
-@router.get("/tasks/my-tasks")
-def get_my_tasks(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
-):
-    statement = select(Task).where(Task.user_id == current_user.user_id)
-    tasks = session.exec(statement).all()
-    return tasks
     
-
-# Create a new task    `POST /tasks`
-@router.post("/", response_model=TaskRead)
+    
+@router.post("/", response_model=TaskRead) 
 def create_task(
     task: TaskCreate,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
-        new_task = Task(**task.model_dump(), user_id=current_user.user_id)
+        # Check if the user is authenticated
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+
+        new_task_data = task.model_dump()
+        new_task_data["user_id"] = current_user.user_id
+        new_task_data["created_at"] = datetime.now(timezone.utc)
+        new_task_data["updated_at"] = datetime.now(timezone.utc) 
+
+        new_task = Task(**new_task_data)
         session.add(new_task)
         session.commit()
         session.refresh(new_task)
         return new_task
     except Exception as e:
+        session.rollback() # Ensure rollback on error
         raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
-
    
 
 # Update a task    `PUT /tasks/{task_id}`
