@@ -13,6 +13,42 @@ from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+
+
+
+# _________________________functions definition____________
+
+MAX_TAGS = 3
+
+# Function to validate and append tags to a task
+def validate_and_append_tags(task: Task, tag_names: List[str], session: Session):
+    existing_tag_names = {tag.name for tag in task.tags}
+
+    for tag_name in tag_names:
+        tag_name = tag_name.strip()
+
+        if not tag_name or tag_name in existing_tag_names:
+            continue  # skip empty or duplicate tags
+
+        if len(existing_tag_names) >= MAX_TAGS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Each task can have a maximum of {MAX_TAGS} unique tags."
+            )
+
+        tag = session.exec(select(Tag).where(Tag.name == tag_name)).first()
+        if not tag:
+            tag = Tag(name=tag_name)
+            session.add(tag)
+            session.flush()
+
+        task.tags.append(tag)
+        existing_tag_names.add(tag_name)
+
+# ________________________end of functions definition___________________________
+
+
+
 # Get all tasks    `GET /tasks`
 @router.get("/", response_model=list[TaskRead])
 def get_tasks(session: Session = Depends(get_session)):
@@ -68,7 +104,8 @@ def get_task(
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching task")
     
-    
+
+# Create a new task    `POST /tasks`    
 @router.post("/", response_model=TaskRead)
 def create_task(
     task: TaskCreate,
@@ -131,20 +168,12 @@ def update_task(
 
         update_data = updated_task.model_dump(exclude_unset=True)
 
-        # Handle tags separately
+        # Tag processing (clean + validated)
         tag_names = update_data.pop("tags", None)
         if tag_names is not None:
-            new_tags = []
-            for tag_name in tag_names:
-                tag = session.exec(Tag).filter(Tag.name == tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    session.add(tag)
-                    session.flush()
-                new_tags.append(tag)
-            task.tags = new_tags
+            validate_and_append_tags(task, tag_names, session)
 
-        # Bulk update the rest
+        # Field updates
         for key, value in update_data.items():
             setattr(task, key, value)
 
@@ -154,22 +183,65 @@ def update_task(
         session.refresh(task)
 
         return task
+
+    except HTTPException:
+        raise
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
 
 
+#remove tags from a task    `DELETE /tasks/{task_id}/remove-tags`
+@router.delete("/{task_id}/tags/{tag_name}", response_model=TaskRead)
+def remove_tag_from_task(
+    task_id: int,
+    tag_name: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if task.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    tag_name = tag_name.strip()
+    if not tag_name:
+        raise HTTPException(status_code=400, detail="Tag name cannot be empty")
+
+    original_tags = task.tags[:]
+    task.tags = [tag for tag in original_tags if tag.name != tag_name]
+
+    if len(task.tags) == len(original_tags):
+        raise HTTPException(status_code=404, detail=f"Tag '{tag_name}' not found in task")
+
+    task.updated_at = datetime.now(timezone.utc)
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+
+    return task
+
 
 # Delete a task    `DELETE /tasks/{task_id}`
 @router.delete("/{task_id}")
-def delete_task(task_id: int, session: Session = Depends(get_session)):
+def delete_task(
+    task_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
     try:
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
+        if task.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this task")
+
         session.delete(task)
         session.commit()
         return {"message": "Task deleted successfully"}
     except Exception:
+        session.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete task")
