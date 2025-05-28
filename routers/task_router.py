@@ -116,16 +116,15 @@ def create_task(
         if not current_user:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
-        # Prepare task data except tags
-        new_task_data = task.model_dump(exclude={"tags"})
+        # Prepare task data except tags and dependencies
+        new_task_data = task.model_dump(exclude={"tags", "dependency_ids"})
         new_task_data["user_id"] = current_user.user_id
         new_task_data["created_at"] = datetime.now(timezone.utc)
         new_task_data["updated_at"] = datetime.now(timezone.utc)
 
-        # Instantiate Task without tags first
         new_task = Task(**new_task_data)
 
-        # If tags were provided, fetch Tag objects and assign
+        # Handle tags
         if task.tags:
             tags = session.exec(select(Tag).where(Tag.name.in_(task.tags))).all()
             if len(tags) != len(task.tags):
@@ -137,17 +136,32 @@ def create_task(
             new_task.tags = tags
 
         session.add(new_task)
+        session.flush()  # To get new_task.id before setting dependencies
+
+        # Handle dependencies
+        if task.dependency_ids:
+            if new_task.id in task.dependency_ids:
+                raise HTTPException(status_code=400, detail="A task cannot depend on itself.")
+
+            dependencies = session.exec(select(Task).where(Task.id.in_(task.dependency_ids))).all()
+            if len(dependencies) != len(task.dependency_ids):
+                found_ids = {d.id for d in dependencies}
+                missing_ids = set(task.dependency_ids) - found_ids
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Dependency task(s) not found: {missing_ids}"
+                )
+            new_task.prerequisites = dependencies
+
         session.commit()
         session.refresh(new_task)
         return new_task
 
     except HTTPException:
-        # Reraise HTTPExceptions (like tag not found)
         raise
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
-    
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}") 
 
 
 # Update a task `PATCH /tasks/{task_id}`

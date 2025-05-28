@@ -28,7 +28,10 @@ class TaskCreate(BaseModel):
     priority: PriorityLevel = PriorityLevel.medium  # updated to non-optional with default
     due_date: Optional[datetime] = None
     is_completed: bool = False
+    estimated_time: Optional[float] = 0.25  
+    actual_time: Optional[float] = 0.25  
     tags: List[str] = []  # updated to non-optional with default list
+    dependency_ids: Optional[List[int]] = []
 
     class Config:
         orm_mode = True
@@ -44,8 +47,11 @@ class TaskRead(BaseModel):
     due_date: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]  # updated to be Optional to match model
+    estimated_time: Optional[float] = 0.25  
+    actual_time: Optional[float] = 0.25  
     user_id: str
     tags: List[TagReadNested] = []
+    dependencies: List[int] = []
 
     class Config:
         orm_mode = True
@@ -58,8 +64,11 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     tags: Optional[List[str]] = None
     due_date: Optional[datetime] = None
+    estimated_time: Optional[float] = 0.25  
+    actual_time: Optional[float] = 0.25  
     priority: Optional[PriorityLevel] = None
     is_completed: Optional[bool] = None
+    dependency_ids: Optional[List[int]] = None
 
     class Config:
         orm_mode = True
