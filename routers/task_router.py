@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 from models.user import User
 from models.task import Task
+from models.task_dependency import TaskDependencyLink
 from models.tag import Tag
 from schemas.task import TaskCreate, TaskRead, TaskUpdate
 from db.database import get_session
@@ -140,18 +141,13 @@ def create_task(
 
         # Handle dependencies
         if task.dependency_ids:
-            if new_task.id in task.dependency_ids:
-                raise HTTPException(status_code=400, detail="A task cannot depend on itself.")
-
-            dependencies = session.exec(select(Task).where(Task.id.in_(task.dependency_ids))).all()
+            dependencies = session.exec(
+                select(Task).where(Task.id.in_(task.dependency_ids))
+            ).all()
             if len(dependencies) != len(task.dependency_ids):
-                found_ids = {d.id for d in dependencies}
-                missing_ids = set(task.dependency_ids) - found_ids
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Dependency task(s) not found: {missing_ids}"
-                )
-            new_task.prerequisites = dependencies
+                missing = set(task.dependency_ids) - {t.id for t in dependencies}
+                raise HTTPException(400, detail=f"Some dependencies not found: {missing}")
+            new_task.dependencies = dependencies
 
         session.commit()
         session.refresh(new_task)
@@ -187,7 +183,7 @@ def update_task(
         if tag_names is not None:
             validate_and_append_tags(task, tag_names, session)
 
-        # Field updates
+        # Update other fields
         for key, value in update_data.items():
             setattr(task, key, value)
 
@@ -203,6 +199,7 @@ def update_task(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
+
 
 
 #remove tags from a task    `DELETE /tasks/{task_id}/remove-tags`
@@ -259,3 +256,54 @@ def delete_task(
     except Exception:
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete task")
+    
+
+
+# update task dependencies    `PUT /tasks/{task_id}/dependencies`
+@router.put("/{task_id}/dependencies", response_model=TaskRead)
+def set_task_dependencies(
+    task_id: int,
+    dependency_ids: List[int],
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        task = session.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.user_id != current_user.user_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        if task_id in dependency_ids:
+            raise HTTPException(status_code=400, detail="Task cannot depend on itself")
+
+        dependencies = session.exec(
+            select(Task).where(Task.id.in_(dependency_ids))
+        ).all()
+
+        if len(dependencies) != len(dependency_ids):
+            raise HTTPException(status_code=400, detail="Invalid dependency ID(s)")
+        if any(dep.user_id != current_user.user_id for dep in dependencies):
+            raise HTTPException(status_code=403, detail="Cross-user linking not allowed")
+
+        # Clear old links
+        session.exec(TaskDependencyLink).filter(TaskDependencyLink.task_id == task_id).delete()
+
+        # Add new links
+        links = [
+            TaskDependencyLink(task_id=task_id, depends_on_id=dep_id)
+            for dep_id in dependency_ids
+        ]
+        session.add_all(links)
+
+        task.updated_at = datetime.now(timezone.utc)
+        session.commit()
+        session.refresh(task)
+
+        return task
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Dependency update failed: {str(e)}")

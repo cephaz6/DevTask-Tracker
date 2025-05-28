@@ -46,16 +46,17 @@ class TaskRead(BaseModel):
     priority: PriorityLevel
     due_date: Optional[datetime]
     created_at: datetime
-    updated_at: Optional[datetime]  # updated to be Optional to match model
-    estimated_time: Optional[float] = 0.25  
-    actual_time: Optional[float] = 0.25  
+    updated_at: Optional[datetime]
+    estimated_time: Optional[float]
+    actual_time: Optional[float]
     user_id: str
     tags: List[TagReadNested] = []
-    dependencies: List[int] = []
+    dependencies: List[int] = []  # Just show task IDs here for simplicity
 
     class Config:
         orm_mode = True
         model_config = {"from_attributes": True}
+
 
 
 class TaskUpdate(BaseModel):
@@ -64,8 +65,8 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     tags: Optional[List[str]] = None
     due_date: Optional[datetime] = None
-    estimated_time: Optional[float] = 0.25  
-    actual_time: Optional[float] = 0.25  
+    estimated_time: Optional[float] = None  
+    actual_time: Optional[float] =  None  
     priority: Optional[PriorityLevel] = None
     is_completed: Optional[bool] = None
     dependency_ids: Optional[List[int]] = None
