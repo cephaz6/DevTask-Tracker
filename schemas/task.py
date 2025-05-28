@@ -4,6 +4,7 @@ from datetime import datetime
 from schemas.tag import TagReadNested
 from enum import Enum
 
+
 class TaskStatus(str, Enum):
     """Enumeration for task status."""
     not_started = "not_started"
@@ -12,6 +13,7 @@ class TaskStatus(str, Enum):
     on_hold = "on_hold"
     cancelled = "cancelled"
     completed = "completed"
+
 
 class PriorityLevel(str, Enum):
     low = "low"
@@ -22,14 +24,15 @@ class PriorityLevel(str, Enum):
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    status: Optional[TaskStatus] = TaskStatus.pending
-    priority: Optional[PriorityLevel] = PriorityLevel.medium
+    status: TaskStatus = TaskStatus.not_started  # updated to non-optional with default
+    priority: PriorityLevel = PriorityLevel.medium  # updated to non-optional with default
     due_date: Optional[datetime] = None
     is_completed: bool = False
-    tags: Optional[List[str]] = []
+    tags: List[str] = []  # updated to non-optional with default list
 
     class Config:
-        orm_mode = True 
+        orm_mode = True
+
 
 class TaskRead(BaseModel):
     id: int
@@ -37,16 +40,17 @@ class TaskRead(BaseModel):
     description: Optional[str]
     status: TaskStatus
     is_completed: bool
-    priority: Optional[PriorityLevel]
+    priority: PriorityLevel
     due_date: Optional[datetime]
     created_at: datetime
-    updated_at: datetime
-    user_id: str 
+    updated_at: Optional[datetime]  # updated to be Optional to match model
+    user_id: str
     tags: List[TagReadNested] = []
 
     class Config:
-        model_config = {"from_attributes": True}
         orm_mode = True
+        model_config = {"from_attributes": True}
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -55,7 +59,7 @@ class TaskUpdate(BaseModel):
     tags: Optional[List[str]] = None
     due_date: Optional[datetime] = None
     priority: Optional[PriorityLevel] = None
-    is_completed: Optional[bool] = None 
+    is_completed: Optional[bool] = None
 
     class Config:
         orm_mode = True

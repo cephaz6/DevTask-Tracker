@@ -6,6 +6,7 @@ from routers import task_router
 from routers import auth_router as auth
 from routers import tag_router
 
+
 from dotenv import load_dotenv
 
 
@@ -20,11 +21,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+@app.get("/")
+def root():
+    return {"message": "Welcome to DevTask Tracker"}
+
 # Include the routers
 app.include_router(task_router.router)
 app.include_router(auth.router)
 app.include_router(tag_router.router)
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to DevTask Tracker"}
+

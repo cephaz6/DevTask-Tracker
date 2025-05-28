@@ -90,12 +90,12 @@ def create_task(
 
         # If tags were provided, fetch Tag objects and assign
         if task.tags:
-            tags = session.exec(select(Tag).where(Tag.id.in_(task.tags))).all()
+            tags = session.exec(select(Tag).where(Tag.name.in_(task.tags))).all()
             if len(tags) != len(task.tags):
-                missing_ids = set(task.tags) - {tag.id for tag in tags}
+                missing_tag_name = set(task.tags) - {tag.name for tag in tags}
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Some tags not found: {missing_ids}"
+                    detail=f"Some tags not found: {missing_tag_name}"
                 )
             new_task.tags = tags
 
@@ -113,7 +113,7 @@ def create_task(
     
 
 
-# Update a task    `PATCH /tasks/{task_id}`
+# Update a task `PATCH /tasks/{task_id}`
 @router.patch("/{task_id}", response_model=TaskRead)
 def update_task(
     task_id: int,
@@ -129,16 +129,33 @@ def update_task(
         if task.user_id != current_user.user_id:
             raise HTTPException(status_code=403, detail="Not authorized to update this task")
 
-        update_data = updated_task.model_dump(exclude_unset=True)  # Only provided fields
+        update_data = updated_task.model_dump(exclude_unset=True)
 
+        # Handle tags separately
+        tag_names = update_data.pop("tags", None)
+        if tag_names is not None:
+            new_tags = []
+            for tag_name in tag_names:
+                tag = session.exec(Tag).filter(Tag.name == tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    session.add(tag)
+                    session.flush()
+                new_tags.append(tag)
+            task.tags = new_tags
+
+        # Bulk update the rest
         for key, value in update_data.items():
             setattr(task, key, value)
 
+        task.updated_at = datetime.now(timezone.utc)
         session.add(task)
         session.commit()
         session.refresh(task)
+
         return task
     except Exception as e:
+        session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
 
 
