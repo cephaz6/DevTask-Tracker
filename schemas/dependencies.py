@@ -18,7 +18,7 @@ class TaskRead(BaseModel):
     id: int
     title: str
     description: Optional[str]
-    dependencies: List["TaskReadNested"] = []
+    dependencies: List[int] = []
     dependents: List["TaskReadNested"] = []
 
     class Config:
@@ -26,9 +26,10 @@ class TaskRead(BaseModel):
 
 class TaskReadNested(BaseModel):
     id: int
-    title: str
+
 
     class Config:
         orm_mode = True
+
 
 TaskRead.model_rebuild()

@@ -46,6 +46,26 @@ def validate_and_append_tags(task: Task, tag_names: List[str], session: Session)
         task.tags.append(tag)
         existing_tag_names.add(tag_name)
 
+
+# Function to map Task model to TaskRead schema
+def map_task_to_read(task: Task) -> TaskRead:
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        description=task.description,
+        status=task.status,
+        priority=task.priority,
+        due_date=task.due_date,
+        estimated_time=task.estimated_time,
+        actual_time=task.actual_time,
+        tags=[tag.name for tag in task.tags],
+        dependencies=[dep.id for dep in task.dependencies],
+        created_at=task.created_at,
+        updated_at=task.updated_at,
+    )
+
+
+
 # ________________________end of functions definition___________________________
 
 
@@ -109,7 +129,7 @@ def get_task(
 # Create a new task    `POST /tasks`    
 @router.post("/", response_model=TaskRead)
 def create_task(
-    task: TaskCreate,
+    task: TaskCreate, 
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -192,7 +212,8 @@ def update_task(
         session.commit()
         session.refresh(task)
 
-        return task
+        return map_task_to_read(task)
+
 
     except HTTPException:
         raise
@@ -232,7 +253,7 @@ def remove_tag_from_task(
     session.commit()
     session.refresh(task)
 
-    return task
+    return map_task_to_read(task)
 
 
 # Delete a task    `DELETE /tasks/{task_id}`
@@ -300,7 +321,8 @@ def set_task_dependencies(
         session.commit()
         session.refresh(task)
 
-        return task
+        return map_task_to_read(task)
+
 
     except HTTPException:
         raise
