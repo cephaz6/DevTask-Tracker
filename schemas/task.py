@@ -36,6 +36,14 @@ class TaskCreate(BaseModel):
     class Config:
         orm_mode = True
 
+class TaskSummary(BaseModel):
+    id: int
+    title: str
+    status: str
+
+    class Config:
+        orm_mode = True
+
 
 class TaskRead(BaseModel):
     id: int
@@ -51,11 +59,12 @@ class TaskRead(BaseModel):
     actual_time: Optional[float]
     user_id: str
     tags: List[TagReadNested] = []
-    dependencies: List[int] = []  # Just show task IDs here for simplicity
+    dependencies: List[TaskSummary] = []  # Just show task IDs here for simplicity
 
     class Config:
         orm_mode = True
         model_config = {"from_attributes": True}
+TaskRead.model_rebuild()
 
 
 

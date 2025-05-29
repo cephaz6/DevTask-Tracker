@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from db.database import init_db
-from routers import task_router
 from routers import auth_router as auth
+from routers.tasks.routes import router as task_router
 from routers import tag_router
 
 
@@ -26,8 +26,9 @@ def root():
     return {"message": "Welcome to DevTask Tracker"}
 
 # Include the routers
-app.include_router(task_router.router)
+# app.include_router(task_router.router)
 app.include_router(auth.router)
 app.include_router(tag_router.router)
+app.include_router(task_router)
 
 

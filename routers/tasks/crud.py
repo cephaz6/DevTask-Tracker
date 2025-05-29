@@ -11,62 +11,12 @@ from utils.security import get_current_user
 from typing import List
 from datetime import datetime, timezone
 from sqlalchemy.exc import SQLAlchemyError
-
-router = APIRouter(prefix="/tasks", tags=["Tasks"])
-
+from .includes import *
 
 
-
-# _________________________functions definition____________
-
-MAX_TAGS = 3
-
-# Function to validate and append tags to a task
-def validate_and_append_tags(task: Task, tag_names: List[str], session: Session):
-    existing_tag_names = {tag.name for tag in task.tags}
-
-    for tag_name in tag_names:
-        tag_name = tag_name.strip()
-
-        if not tag_name or tag_name in existing_tag_names:
-            continue  # skip empty or duplicate tags
-
-        if len(existing_tag_names) >= MAX_TAGS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Each task can have a maximum of {MAX_TAGS} unique tags."
-            )
-
-        tag = session.exec(select(Tag).where(Tag.name == tag_name)).first()
-        if not tag:
-            tag = Tag(name=tag_name)
-            session.add(tag)
-            session.flush()
-
-        task.tags.append(tag)
-        existing_tag_names.add(tag_name)
+router = APIRouter()
 
 
-# Function to map Task model to TaskRead schema
-def map_task_to_read(task: Task) -> TaskRead:
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        description=task.description,
-        status=task.status,
-        priority=task.priority,
-        due_date=task.due_date,
-        estimated_time=task.estimated_time,
-        actual_time=task.actual_time,
-        tags=[tag.name for tag in task.tags],
-        dependencies=[dep.id for dep in task.dependencies],
-        created_at=task.created_at,
-        updated_at=task.updated_at,
-    )
-
-
-
-# ________________________end of functions definition___________________________
 
 
 
@@ -212,8 +162,7 @@ def update_task(
         session.commit()
         session.refresh(task)
 
-        return map_task_to_read(task)
-
+        return task
 
     except HTTPException:
         raise
@@ -253,7 +202,7 @@ def remove_tag_from_task(
     session.commit()
     session.refresh(task)
 
-    return map_task_to_read(task)
+    return task
 
 
 # Delete a task    `DELETE /tasks/{task_id}`
@@ -321,8 +270,7 @@ def set_task_dependencies(
         session.commit()
         session.refresh(task)
 
-        return map_task_to_read(task)
-
+        return task
 
     except HTTPException:
         raise
