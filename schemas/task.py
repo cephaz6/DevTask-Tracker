@@ -59,7 +59,8 @@ class TaskRead(BaseModel):
     actual_time: Optional[float]
     user_id: str
     tags: List[TagReadNested] = []
-    dependencies: List[TaskSummary] = []  # Just show task IDs here for simplicity
+    dependencies: List[TaskSummary] = []  
+    comments: List[str] = [] 
 
     class Config:
         orm_mode = True

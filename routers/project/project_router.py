@@ -20,7 +20,7 @@ def create_project(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        new_project = Project(**project.dict(), owner_id=current_user.user_id)
+        new_project = Project(**project.model_dump(), owner_id=current_user.user_id)
         session.add(new_project)
         session.commit()
         session.refresh(new_project)

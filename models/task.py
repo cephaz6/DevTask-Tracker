@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from models.tag import Tag, TaskTagLink
 from models.task_dependency import TaskDependencyLink
 from models.project import Project  
+from models.comment import TaskComment
 
 if TYPE_CHECKING:
     from .user import User
@@ -33,6 +34,10 @@ class Task(SQLModel, table=True):
 
     project_id: Optional[int] = Field(default=None, foreign_key="project.id")
     project: Optional["Project"] = Relationship(back_populates="tasks")
+
+
+    comments: List["TaskComment"] = Relationship(back_populates="task")
+
 
 
     # Dependencies: Tasks this task depends on
