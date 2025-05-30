@@ -3,6 +3,7 @@ from sqlmodel import Field, SQLModel, Relationship
 from pydantic import EmailStr
 from datetime import datetime, timezone
 from utils.core import generate_user_id
+from models.project import ProjectMember  
 
 
 if TYPE_CHECKING:
@@ -26,6 +27,9 @@ class User(SQLModel, table=True):
     last_login_ip: Optional[str] = None
 
     tasks: List["Task"] = Relationship(back_populates="user")
+
+    project_memberships: List["ProjectMember"] = Relationship(back_populates="user")
+
 
     def __repr__(self):
         return f"<User(id={self.id}, user_id='{self.user_id}', email='{self.email}')>" 

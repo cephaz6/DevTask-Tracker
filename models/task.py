@@ -3,6 +3,7 @@ from typing import Optional, TYPE_CHECKING, List
 from datetime import datetime, timezone
 from models.tag import Tag, TaskTagLink
 from models.task_dependency import TaskDependencyLink
+from models.project import Project  
 
 if TYPE_CHECKING:
     from .user import User
@@ -28,6 +29,11 @@ class Task(SQLModel, table=True):
 
     tags: List["Tag"] = Relationship(back_populates="tasks", link_model=TaskTagLink)
     user: Optional["User"] = Relationship(back_populates="tasks")
+
+
+    project_id: Optional[int] = Field(default=None, foreign_key="project.id")
+    project: Optional["Project"] = Relationship(back_populates="tasks")
+
 
     # Dependencies: Tasks this task depends on
     dependencies: List["Task"] = Relationship(

@@ -18,8 +18,6 @@ router = APIRouter()
 
 
 
-
-
 # Get all tasks    `GET /tasks`
 @router.get("/", response_model=list[TaskRead])
 def get_tasks(session: Session = Depends(get_session)):
