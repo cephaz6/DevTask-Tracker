@@ -8,6 +8,9 @@ if TYPE_CHECKING:
 
 
 class TaskComment(SQLModel, table=True):
+    """Model for task comments."""
+    __tablename__ = "taskcomments"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     task_id: int = Field(foreign_key="tasks.id")
     user_id: str = Field(foreign_key="users.user_id")

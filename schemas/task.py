@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from schemas.tag import TagReadNested
 from enum import Enum
+from schemas.comment import TaskCommentSummary
 
 
 class TaskStatus(str, Enum):
@@ -32,6 +33,7 @@ class TaskCreate(BaseModel):
     actual_time: Optional[float] = 0.25  
     tags: List[str] = []  # updated to non-optional with default list
     dependency_ids: Optional[List[int]] = []
+    project_id: Optional[int] = None  
 
     class Config:
         orm_mode = True
@@ -58,9 +60,11 @@ class TaskRead(BaseModel):
     estimated_time: Optional[float]
     actual_time: Optional[float]
     user_id: str
+    project_id: Optional[int] = None
     tags: List[TagReadNested] = []
     dependencies: List[TaskSummary] = []  
-    comments: List[str] = [] 
+    comments: List[TaskCommentSummary] = [] 
+
 
     class Config:
         orm_mode = True

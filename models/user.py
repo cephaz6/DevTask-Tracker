@@ -4,6 +4,7 @@ from pydantic import EmailStr
 from datetime import datetime, timezone
 from utils.core import generate_user_id
 from models.project import ProjectMember  
+from models.task import TaskAssignment
 
 
 if TYPE_CHECKING:
@@ -29,6 +30,8 @@ class User(SQLModel, table=True):
     tasks: List["Task"] = Relationship(back_populates="user")
 
     project_memberships: List["ProjectMember"] = Relationship(back_populates="user")
+
+    task_assignments: List["TaskAssignment"] = Relationship(back_populates="user")
 
 
     def __repr__(self):

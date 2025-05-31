@@ -27,18 +27,21 @@ class Task(SQLModel, table=True):
     updated_at: Optional[datetime] = None
 
     user_id: str = Field(foreign_key="users.user_id", index=True)
-
-    tags: List["Tag"] = Relationship(back_populates="tasks", link_model=TaskTagLink)
     user: Optional["User"] = Relationship(back_populates="tasks")
 
+    # Tags association
+    tags: List["Tag"] = Relationship(back_populates="tasks", link_model=TaskTagLink)
 
+
+    # Project association
     project_id: Optional[int] = Field(default=None, foreign_key="project.id")
     project: Optional["Project"] = Relationship(back_populates="tasks")
 
-
+    # Comments asssociation
     comments: List["TaskComment"] = Relationship(back_populates="task")
 
-
+    # Assignments: Users assigned to this task
+    assignments: List["TaskAssignment"] = Relationship(back_populates="task")
 
     # Dependencies: Tasks this task depends on
     dependencies: List["Task"] = Relationship(
@@ -65,3 +68,21 @@ class Task(SQLModel, table=True):
     )
     def __repr__(self):
         return f"<Task(id={self.id}, title='{self.title}', status='{self.status}')>"
+    
+
+
+
+
+class TaskAssignment(SQLModel, table=True):
+    """Model for task assignments."""
+    __tablename__ = "task_assignments"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: int = Field(foreign_key="tasks.id")
+    user_id: str = Field(foreign_key="users.user_id")
+    is_watcher: bool = Field(default=False)  # False => “assignee”; True => “watcher”
+    assigned_at: datetime = Field(default_factory=datetime.now)
+
+    # Relationship backrefs
+    task: Optional["Task"] = Relationship(back_populates="assignments")
+    user: Optional["User"] = Relationship(back_populates="task_assignments")

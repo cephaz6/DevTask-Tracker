@@ -1,8 +1,5 @@
 from datetime import datetime
-from typing import Optional
-from sqlmodel import SQLModel, Field, Relationship
-from models.task import Task
-from models.user import User
+from sqlmodel import SQLModel
 
 
 class TaskCommentBase(SQLModel):
@@ -16,3 +13,12 @@ class TaskCommentRead(TaskCommentBase):
     id: int
     user_id: str
     created_at: datetime
+    class Config:
+        orm_mode = True
+
+class TaskCommentSummary(SQLModel):
+    id: int
+    content: str
+    
+    class Config:
+        orm_mode = True
