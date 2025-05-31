@@ -14,7 +14,7 @@ from schemas.task_assignment import TaskAssignmentCreate, TaskAssignmentRead
 from db.database import get_session
 from utils.security import get_current_user
 
-router = APIRouter(prefix="/task-assignments", tags=["Task Assignments"])
+router = APIRouter()
 
 
 # This function checks if the current user is authorized to modify task assignments.
@@ -46,53 +46,44 @@ def assign_user_to_task(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Assign a user as an 'assignee' (is_watcher=False) to a task.
-    Only the task owner or project owner can do this.
-    """
     try:
-        # 1. Fetch task
         task = session.get(Task, payload.task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
-        # 2. Authorization check (task owner or project owner)
         _authorize_task_modification(task, current_user, session)
 
-        # 3. Validate invited user exists
-        invited_user = session.exec(
-            select(User).where(User.user_id == payload.user_id)
-        ).first()
-        if not invited_user:
-            raise HTTPException(status_code=404, detail="User to assign not found")
+        user = session.exec(select(User).where(User.user_id == payload.user_id)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-        # 4. Prevent duplicate assignment (same user_id & same task_id & is_watcher=False)
-        existing = session.exec(
+        assignment = session.exec(
             select(TaskAssignment).where(
                 TaskAssignment.task_id == payload.task_id,
-                TaskAssignment.user_id == payload.user_id,
-                TaskAssignment.is_watcher == False
+                TaskAssignment.user_id == payload.user_id
             )
         ).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="User is already an assignee for this task")
 
-        # 5. Create assignment
-        assignment = TaskAssignment(
-            task_id=payload.task_id,
-            user_id=payload.user_id,
-            is_watcher=False
-        )
-        session.add(assignment)
+        if assignment:
+            assignment.is_watcher = payload.is_watcher
+        else:
+            assignment = TaskAssignment(
+                task_id=payload.task_id,
+                user_id=payload.user_id,
+                is_watcher=payload.is_watcher
+            )
+            session.add(assignment)
+
         session.commit()
         session.refresh(assignment)
         return assignment
 
     except HTTPException:
-        raise  # re-raise if we intentionally raised it above
+        raise
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Add a user as a watcher to a task
 @router.post("/watch", response_model=TaskAssignmentRead)

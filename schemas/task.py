@@ -4,6 +4,7 @@ from datetime import datetime
 from schemas.tag import TagReadNested
 from enum import Enum
 from schemas.comment import TaskCommentSummary
+from schemas.task_assignment import TaskWatcher
 
 
 class TaskStatus(str, Enum):
@@ -64,6 +65,7 @@ class TaskRead(BaseModel):
     tags: List[TagReadNested] = []
     dependencies: List[TaskSummary] = []  
     comments: List[TaskCommentSummary] = [] 
+    assignments: List[TaskWatcher] = []  
 
 
     class Config:
