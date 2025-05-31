@@ -18,4 +18,5 @@ def get_session():
 
 # Function to create the database tables
 def init_db():
-    SQLModel.metadata.create_all(engine)
+    # SQLModel.metadata.create_all(engine)
+    pass

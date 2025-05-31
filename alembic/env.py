@@ -7,14 +7,16 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-import sqlmodel
 from sqlmodel import SQLModel
 
 # Ensure the parent directory is in the path to import models
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models.task import Task
+from models.task import Task, TaskAssignment
 from models.tag import Tag
 from models.user import User
+from models.task_dependency import TaskDependencyLink
+from models.project import Project, ProjectMember
+from models.comment import TaskComment
 
 
 
