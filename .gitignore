@@ -13,3 +13,5 @@ __pycache__/
 *.log
 /sessions/
 /instance/
+Roadmap.md
+devtask.db

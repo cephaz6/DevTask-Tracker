@@ -86,6 +86,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[PriorityLevel] = None
     is_completed: Optional[bool] = None
     dependency_ids: Optional[List[str]] = None
+    project_id: Optional[str] = None
 
     class Config:
         orm_mode = True

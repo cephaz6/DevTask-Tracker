@@ -151,6 +151,13 @@ def update_task(
         if tag_names is not None:
             validate_and_append_tags(task, tag_names, session)
 
+        # Force include project_id even if it's None
+        if "project_id" in updated_task.model_fields_set:
+            if updated_task.project_id is None:
+                update_data["project_id"] = None
+            else:
+                update_data["project_id"] = updated_task.project_id
+
         # Update other fields
         for key, value in update_data.items():
             setattr(task, key, value)
