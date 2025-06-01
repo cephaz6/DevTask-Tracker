@@ -11,7 +11,7 @@ class TagCreate(TagBase):
 
 # Schema used when reading tags (e.g. returning from API)
 class TagRead(TagBase):
-    id: int
+    id: str
 
     class Config:
         orm_mode = True

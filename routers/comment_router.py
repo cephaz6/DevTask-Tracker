@@ -42,7 +42,7 @@ def add_comment(
 
 # Get all comments for a specific task    `GET /comments/task/{task_id}`
 @router.get("/{task_id}", response_model=List[TaskCommentRead])
-def get_comments_for_task(task_id: int, session: Session = Depends(get_session)):
+def get_comments_for_task(task_id: str, session: Session = Depends(get_session)):
     try:
         comments = session.exec(
             select(TaskComment).where(TaskComment.task_id == task_id)
@@ -54,7 +54,7 @@ def get_comments_for_task(task_id: int, session: Session = Depends(get_session))
 # Delete a comment    `DELETE /comments/{comment_id}`
 @router.delete("/{comment_id}")
 def delete_comment(
-    comment_id: int,
+    comment_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):

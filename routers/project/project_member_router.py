@@ -68,7 +68,7 @@ def invite_user_to_project(
 # List all members of a project    `GET /project-members/{project_id}/members`
 @router.get("/{project_id}/members", response_model=list[ProjectMemberRead])
 def list_project_members(
-    project_id: int,
+    project_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):

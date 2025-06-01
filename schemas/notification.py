@@ -20,6 +20,7 @@ class NotificationCreate(BaseModel):
     message: str
     related_task_id: Optional[int] = None
     related_project_id: Optional[int] = None
+    type: NotificationType = NotificationType.GENERAL
 
 class NotificationRead(NotificationCreate):
     id: int

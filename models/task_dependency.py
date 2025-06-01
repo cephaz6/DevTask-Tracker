@@ -7,9 +7,13 @@
 from sqlmodel import SQLModel, Field, Relationship
 
 
+from sqlmodel import SQLModel, Field
+from typing import Optional
+
 class TaskDependencyLink(SQLModel, table=True):
     __tablename__ = "task_dependencies"
     """Link model for task dependencies."""
 
-    task_id: int = Field(foreign_key="tasks.id", primary_key=True)
-    depends_on_id: int = Field(foreign_key="tasks.id", primary_key=True)
+    task_id: str = Field(foreign_key="tasks.id", primary_key=True)
+    depends_on_id: str = Field(foreign_key="tasks.id", primary_key=True)
+

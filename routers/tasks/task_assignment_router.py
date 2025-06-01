@@ -143,7 +143,7 @@ def add_watcher_to_task(
 # List all watchers and assignees for a task
 @router.get("/{task_id}", response_model=List[TaskAssignmentRead])
 def list_task_assignments(
-    task_id: int,
+    task_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -190,7 +190,7 @@ def list_task_assignments(
 # Remove a watcher or an assignee from a task
 @router.delete("/{assignment_id}")
 def remove_task_assignment(
-    assignment_id: int,
+    assignment_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):

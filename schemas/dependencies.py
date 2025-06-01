@@ -2,7 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class TaskDependencyBase(BaseModel):
-    dependencies: Optional[List[int]] = []
+    dependencies: Optional[List[str]] = []
 
 class TaskCreate(TaskDependencyBase):
     title: str
@@ -15,17 +15,17 @@ class TaskUpdate(TaskDependencyBase):
     # Include other optional update fields
 
 class TaskRead(BaseModel):
-    id: int
+    id: str
     title: str
     description: Optional[str]
-    dependencies: List[int] = []
+    dependencies: List[str] = []
     dependents: List["TaskReadNested"] = []
 
     class Config:
         orm_mode = True
 
 class TaskReadNested(BaseModel):
-    id: int
+    id: str
 
 
     class Config:

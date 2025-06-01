@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 class TaskAssignmentBase(BaseModel):
-    task_id: int
+    task_id: str
     user_id: str
     is_watcher: bool = False  # False => assignee; True => watcher
 
@@ -18,7 +18,7 @@ class TaskAssignmentCreate(TaskAssignmentBase):
 
 
 class TaskAssignmentRead(TaskAssignmentBase):
-    id: int
+    id: str
     assigned_at: datetime
 
     class Config:

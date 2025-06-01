@@ -33,14 +33,14 @@ class TaskCreate(BaseModel):
     estimated_time: Optional[float] = 0.25  
     actual_time: Optional[float] = 0.25  
     tags: List[str] = []  # updated to non-optional with default list
-    dependency_ids: Optional[List[int]] = []
-    project_id: Optional[int] = None  
+    dependency_ids: Optional[List[str]] = []
+    project_id: Optional[str] = None  
 
     class Config:
         orm_mode = True
 
 class TaskSummary(BaseModel):
-    id: int
+    id: str
     title: str
     status: str
 
@@ -49,7 +49,7 @@ class TaskSummary(BaseModel):
 
 
 class TaskRead(BaseModel):
-    id: int
+    id: str
     title: str
     description: Optional[str]
     status: TaskStatus
@@ -61,7 +61,7 @@ class TaskRead(BaseModel):
     estimated_time: Optional[float]
     actual_time: Optional[float]
     user_id: str
-    project_id: Optional[int] = None
+    project_id: Optional[str] = None
     tags: List[TagReadNested] = []
     dependencies: List[TaskSummary] = []  
     comments: List[TaskCommentSummary] = [] 
@@ -85,7 +85,7 @@ class TaskUpdate(BaseModel):
     actual_time: Optional[float] =  None  
     priority: Optional[PriorityLevel] = None
     is_completed: Optional[bool] = None
-    dependency_ids: Optional[List[int]] = None
+    dependency_ids: Optional[List[str]] = None
 
     class Config:
         orm_mode = True

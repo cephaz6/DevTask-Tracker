@@ -59,7 +59,7 @@ def list_projects(
 # Get a specific project by ID    `GET /projects/{project_id}`
 @router.get("/{project_id}", response_model=ProjectRead)
 def get_project_by_id(
-    project_id: int,
+    project_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -82,7 +82,7 @@ def get_project_by_id(
 # Update a project    `PUT /projects/{project_id}`
 @router.delete("/{project_id}")
 def delete_project(
-    project_id: int,
+    project_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):

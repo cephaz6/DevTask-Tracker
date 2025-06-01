@@ -15,7 +15,7 @@ def filter_tasks_by_status(status: str, session: Session = Depends(get_session))
 
 # Get all tasks    `GET /tasks` dependent on other tasks
 @router.get("/dependent-on/{task_id}", response_model=List[TaskRead])
-def get_tasks_that_depend_on(task_id: int, session: Session = Depends(get_session)):
+def get_tasks_that_depend_on(task_id: str, session: Session = Depends(get_session)):
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

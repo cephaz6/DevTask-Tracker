@@ -5,17 +5,21 @@ from models.tag import Tag, TaskTagLink
 from models.task_dependency import TaskDependencyLink
 from models.project import Project  
 from models.comment import TaskComment
+import uuid
 
 if TYPE_CHECKING:
     from .user import User
 
+def generate_uuid() -> str:
+    return uuid.uuid4().hex
+
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: Optional[str] = Field(default_factory=generate_uuid, primary_key=True, index=True)
     title: str = Field(index=True)
     description: Optional[str] = None
-    status: str = "not_started"  # Add this if missing
+    status: str = "not_started"
     is_completed: bool = False
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
@@ -29,21 +33,15 @@ class Task(SQLModel, table=True):
     user_id: str = Field(foreign_key="users.user_id", index=True)
     user: Optional["User"] = Relationship(back_populates="tasks")
 
-    # Tags association
     tags: List["Tag"] = Relationship(back_populates="tasks", link_model=TaskTagLink)
 
-
-    # Project association
-    project_id: Optional[int] = Field(default=None, foreign_key="project.id")
+    project_id: Optional[str] = Field(default=None, foreign_key="project.id")
     project: Optional["Project"] = Relationship(back_populates="tasks")
 
-    # Comments asssociation
     comments: List["TaskComment"] = Relationship(back_populates="task")
 
-    # Assignments: Users assigned to this task
     assignments: List["TaskAssignment"] = Relationship(back_populates="task")
 
-    # Dependencies: Tasks this task depends on
     dependencies: List["Task"] = Relationship(
         back_populates="dependents",
         link_model=TaskDependencyLink,
@@ -55,7 +53,6 @@ class Task(SQLModel, table=True):
         }
     )
 
-    # Dependents: Tasks that depend on this task
     dependents: List["Task"] = Relationship(
         back_populates="dependencies",
         link_model=TaskDependencyLink,
@@ -66,23 +63,19 @@ class Task(SQLModel, table=True):
             "overlaps": "dependencies"
         }
     )
+
     def __repr__(self):
         return f"<Task(id={self.id}, title='{self.title}', status='{self.status}')>"
-    
-
-
 
 
 class TaskAssignment(SQLModel, table=True):
-    """Model for task assignments."""
     __tablename__ = "task_assignments"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    task_id: int = Field(foreign_key="tasks.id")
+    id: Optional[str] = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    task_id: str = Field(foreign_key="tasks.id")
     user_id: str = Field(foreign_key="users.user_id")
-    is_watcher: bool = Field(default=False)  # False => “assignee”; True => “watcher”
+    is_watcher: bool = Field(default=False)
     assigned_at: datetime = Field(default_factory=datetime.now)
 
-    # Relationship backrefs
     task: Optional["Task"] = Relationship(back_populates="assignments")
     user: Optional["User"] = Relationship(back_populates="task_assignments")

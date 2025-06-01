@@ -54,7 +54,7 @@ def get_my_tasks(
 # Get a specific task    `GET /tasks/{task_id}`
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(
-    task_id: int,
+    task_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -131,7 +131,7 @@ def create_task(
 # Update a task `PATCH /tasks/{task_id}`
 @router.patch("/{task_id}", response_model=TaskRead)
 def update_task(
-    task_id: int,
+    task_id: str,
     updated_task: TaskUpdate,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -173,7 +173,7 @@ def update_task(
 #remove tags from a task    `DELETE /tasks/{task_id}/remove-tags`
 @router.delete("/{task_id}/tags/{tag_name}", response_model=TaskRead)
 def remove_tag_from_task(
-    task_id: int,
+    task_id: str,
     tag_name: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -206,7 +206,7 @@ def remove_tag_from_task(
 # Delete a task    `DELETE /tasks/{task_id}`
 @router.delete("/{task_id}")
 def delete_task(
-    task_id: int,
+    task_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -230,8 +230,8 @@ def delete_task(
 # update task dependencies    `PUT /tasks/{task_id}/dependencies`
 @router.put("/{task_id}/dependencies", response_model=TaskRead)
 def set_task_dependencies(
-    task_id: int,
-    dependency_ids: List[int],
+    task_id: str,
+    dependency_ids: List[str],
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):

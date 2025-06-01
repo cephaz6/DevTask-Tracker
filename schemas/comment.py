@@ -3,21 +3,21 @@ from sqlmodel import SQLModel
 
 
 class TaskCommentBase(SQLModel):
-    task_id: int
+    task_id: str
     content: str
 
 class TaskCommentCreate(TaskCommentBase):
     pass
 
 class TaskCommentRead(TaskCommentBase):
-    id: int
+    id: str
     user_id: str
     created_at: datetime
     class Config:
         orm_mode = True
 
 class TaskCommentSummary(SQLModel):
-    id: int
+    id: str
     content: str
     
     class Config:
