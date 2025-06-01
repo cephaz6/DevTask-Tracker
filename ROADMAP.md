@@ -53,6 +53,8 @@ roadMap to it ---->
 - [ ] Comments per task
 - [ ] Task watchers / assigned members
 - [ ] Notifications (email or in-app)
+- [ x ] Reply a comment
+- [ x ] Task Resources (URL, Images, Video, Code Blocks)
 
 ---
 

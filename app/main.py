@@ -8,6 +8,7 @@ from routers import tag_router
 from routers.project.routes import router as project_router
 from routers.comment_router import router as comment_router
 from routers.notification_router import router as notification_router
+from routers.dashboard.dashboard_router import router as dashboard_router
 
 
 from dotenv import load_dotenv
@@ -36,5 +37,6 @@ app.include_router(task_router)
 app.include_router(project_router)
 app.include_router(comment_router)
 app.include_router(notification_router)
+app.include_router(dashboard_router)
 
 

@@ -3,6 +3,8 @@ from sqlmodel import Session
 from models.notification import Notification
 from schemas.notification import NotificationType
 
+
+
 # This file contains utility functions for the application.
 # The functions are used to generate random strings for user IDs and passwords.
 def generate_user_id():
@@ -31,3 +33,6 @@ def create_notification(
     except Exception as e:
         session.rollback()
         raise Exception(f"Notification failed: {str(e)}")
+    
+
+
