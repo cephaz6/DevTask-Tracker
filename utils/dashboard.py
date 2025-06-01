@@ -6,6 +6,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlmodel import select, func
 from datetime import datetime
+import logging
+from db.database import get_session
 
 
 # _____________________________ Dashboard Utils _____________________________
@@ -135,40 +137,58 @@ def serialize_task(task: Task) -> dict:
 # Get user dashboard data
 def get_user_dashboard_data(session: Session, user: User) -> dict:
     try:
-        # Get projects the user owns
+        # 1. Get projects the user owns
         owned_projects = session.exec(
             select(Project).where(Project.owner_id == user.user_id)
         ).all()
 
-        # Get projects the user is a member of (excluding ones they own)
+        # 2. Get projects the user is a member of (excluding owned)
         member_links = session.exec(
             select(ProjectMember).where(ProjectMember.user_id == user.user_id)
         ).all()
-        member_project_ids = {link.project_id for link in member_links}
-        member_projects = session.exec(
-            select(Project).where(
-                Project.id.in_(member_project_ids),
-                Project.owner_id != user.user_id  # exclude owned ones
-            )
-        ).all()
 
-        # Tasks assigned to the user
+        member_project_ids = {
+            link.project_id for link in member_links if link.project_id != user.user_id
+        }
+
+        member_projects = (
+            session.exec(
+                select(Project).where(
+                    Project.id.in_(member_project_ids),
+                    Project.owner_id != user.user_id
+                )
+            ).all()
+            if member_project_ids
+            else []
+        )
+
+        # 3. Tasks assigned to the user
         assignments = session.exec(
             select(TaskAssignment).where(TaskAssignment.user_id == user.user_id)
         ).all()
-        task_ids = [assign.task_id for assign in assignments]
-        assigned_tasks = session.exec(
-            select(Task).where(Task.id.in_(task_ids))
-        ).all()
 
+        task_ids = [a.task_id for a in assignments]
+        assigned_tasks = (
+            session.exec(select(Task).where(Task.id.in_(task_ids))).all()
+            if task_ids else []
+        )
+
+        # 4. Task summary
         completed = [task for task in assigned_tasks if task.status == "completed"]
         pending = [task for task in assigned_tasks if task.status != "completed"]
 
+        # 5. Final structure
         return {
             "user_id": str(user.user_id),
-            "full_name": f"{user.first_name} {user.last_name}",
-            "owned_projects": [{"id": str(p.id), "title": p.title} for p in owned_projects],
-            "member_projects": [{"id": str(p.id), "title": p.title} for p in member_projects],
+            "full_name": f"{user.full_name}",
+            "email": user.email,
+            
+            "owned_projects": [
+                {"id": str(p.id), "title": p.title} for p in owned_projects
+            ],
+            "member_projects": [
+                {"id": str(p.id), "title": p.title} for p in member_projects
+            ],
             "total_assigned_tasks": len(assigned_tasks),
             "completed_tasks": len(completed),
             "pending_tasks": len(pending),
@@ -176,4 +196,5 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
         }
 
     except Exception as e:
+        logging.exception("Error in get_user_dashboard_data")
         raise HTTPException(status_code=500, detail="Error fetching user dashboard data")

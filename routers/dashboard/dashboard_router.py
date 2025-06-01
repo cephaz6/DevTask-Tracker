@@ -97,6 +97,7 @@ def user_dashboard(
     session: Session = Depends(get_session),
     current_user = Depends(get_current_user)
 ):
+    print(f"Current user: {current_user}")
     try:
         return get_user_dashboard_data(session=session, user=current_user)
     except HTTPException as e:
