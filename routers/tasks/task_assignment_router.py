@@ -14,6 +14,9 @@ from schemas.task_assignment import TaskAssignmentCreate, TaskAssignmentRead
 from db.database import get_session
 from utils.security import get_current_user
 
+from utils.core import create_notification
+from schemas.notification import NotificationType
+
 router = APIRouter()
 
 
@@ -57,6 +60,7 @@ def assign_user_to_task(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        # Check for existing assignment
         assignment = session.exec(
             select(TaskAssignment).where(
                 TaskAssignment.task_id == payload.task_id,
@@ -65,17 +69,43 @@ def assign_user_to_task(
         ).first()
 
         if assignment:
-            assignment.is_watcher = payload.is_watcher
-        else:
-            assignment = TaskAssignment(
-                task_id=payload.task_id,
-                user_id=payload.user_id,
-                is_watcher=payload.is_watcher
-            )
-            session.add(assignment)
+            # CASE 1: Already assigned and is_watcher is False again → Conflict
+            if not assignment.is_watcher and not payload.is_watcher:
+                raise HTTPException(
+                    status_code=409,
+                    detail="User is already assigned to this task."
+                )
+            
+            # CASE 2: Update is_watcher if changed
+            if assignment.is_watcher != payload.is_watcher:
+                assignment.is_watcher = payload.is_watcher
+                session.add(assignment)
+                session.commit()
+                session.refresh(assignment)
 
+            return assignment
+
+        # New assignment
+        assignment = TaskAssignment(
+            task_id=payload.task_id,
+            user_id=payload.user_id,
+            is_watcher=payload.is_watcher
+        )
+        session.add(assignment)
         session.commit()
         session.refresh(assignment)
+
+        # Send notification only for new assignments (not for is_watcher updates)
+        if user.user_id != current_user.user_id:
+            notif_msg = f"{current_user.full_name} assigned you to the task: '{task.title}'"
+            create_notification(
+                session=session,
+                recipient_user_id=user.user_id,
+                message=notif_msg,
+                task_id=payload.task_id,
+                notif_type=NotificationType.TASK_ASSIGNMENT
+            )
+
         return assignment
 
     except HTTPException:
@@ -132,6 +162,16 @@ def add_watcher_to_task(
         session.add(assignment)
         session.commit()
         session.refresh(assignment)
+
+
+        if invited_user.user_id != current_user.user_id:
+            notif_msg = f"{current_user.full_name} added you as a watcher to the task: '{task.title}'"
+            create_notification(
+                session=session,
+                recipient_user_id=invited_user.user_id,
+                message=notif_msg,
+                notif_type=NotificationType.TASK_ASSIGNMENT
+            )
         return assignment
 
     except HTTPException:

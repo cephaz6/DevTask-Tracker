@@ -13,17 +13,17 @@ class NotificationType(str, Enum):
 class NotificationBase(BaseModel):
     recipient_user_id: str
     message: str
-    related_project_id: Optional[int] = None
+    related_project_id: Optional[str] = None
 
 class NotificationCreate(BaseModel):
     recipient_user_id: str
     message: str
-    related_task_id: Optional[int] = None
-    related_project_id: Optional[int] = None
+    related_task_id: Optional[str] = None
+    related_project_id: Optional[str] = None
     type: NotificationType = NotificationType.GENERAL
 
 class NotificationRead(NotificationCreate):
-    id: int
+    id: str
     is_read: bool
     created_at: datetime
 

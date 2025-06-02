@@ -10,6 +10,9 @@ from schemas.comment import TaskCommentCreate, TaskCommentRead
 from utils.security import get_current_user
 from models.comment import TaskComment
 from models.project import Project
+from utils.core import create_notification
+from schemas.notification import NotificationType
+
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -33,6 +36,16 @@ def add_comment(
         session.add(new_comment)
         session.commit()
         session.refresh(new_comment)
+
+        #Create a notification for the task owner
+        create_notification(
+            session=session,
+            recipient_user_id=task.user_id,
+            message=f"{current_user.full_name} commented on your task",
+            notif_type=NotificationType.COMMENT,
+            task_id=comment.task_id
+        )
+
         return new_comment
 
     except Exception as e:
