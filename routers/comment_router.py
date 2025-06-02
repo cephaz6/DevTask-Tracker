@@ -15,7 +15,8 @@ from schemas.notification import NotificationType
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
-# Add a comment to a task (supports replies with parent_comment_id)
+
+# Add a comment to a task    `POST /comments` (supports replies with parent_comment_id)
 @router.post("/", response_model=TaskCommentRead)
 def add_comment(
     comment: TaskCommentCreate,
@@ -45,20 +46,35 @@ def add_comment(
         session.commit()
         session.refresh(new_comment)
 
-        # Create a notification for the task owner
-        create_notification(
-            session=session,
-            recipient_user_id=task.user_id,
-            message=f"{current_user.full_name} commented on your task",
-            notif_type=NotificationType.COMMENT,
-            task_id=comment.task_id
-        )
+        if new_comment.parent_comment_id:
+            # Notify the parent comment author if this is a reply
+            parent_comment = session.get(TaskComment, new_comment.parent_comment_id)
+
+            if parent_comment and parent_comment.user_id != current_user.user_id:
+                create_notification(
+                    session=session,
+                    recipient_user_id=parent_comment.user_id,
+                    message=f"{current_user.full_name} replied to your comment on task '{task.title}'",
+                    notif_type=NotificationType.COMMENT_REPLY,
+                    task_id=comment.task_id
+                )
+        else:
+            # Create a notification for the task owner
+            if task.user_id != current_user.user_id:
+                create_notification(
+                    session=session,
+                    recipient_user_id=task.user_id,
+                    message=f"{current_user.full_name} commented on your task '{task.title}'",
+                    notif_type=NotificationType.COMMENT,
+                    task_id=comment.task_id
+                )
 
         return new_comment
 
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # Get all comments for a specific task

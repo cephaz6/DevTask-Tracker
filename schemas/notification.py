@@ -7,6 +7,7 @@ from enum import Enum
 class NotificationType(str, Enum):
     GENERAL = "general"
     COMMENT = "comment"
+    COMMENT_REPLY = "comment_reply"
     TASK_ASSIGNMENT = "task_assignment"
     PROJECT_INVITE = "project_invite"
 
