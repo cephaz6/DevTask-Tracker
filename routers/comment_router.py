@@ -13,10 +13,9 @@ from models.project import Project
 from utils.core import create_notification
 from schemas.notification import NotificationType
 
-
 router = APIRouter(prefix="/comments", tags=["comments"])
 
-# Add a comment to a task    `POST /comments`
+# Add a comment to a task (supports replies with parent_comment_id)
 @router.post("/", response_model=TaskCommentRead)
 def add_comment(
     comment: TaskCommentCreate,
@@ -28,16 +27,25 @@ def add_comment(
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
 
+        # Validate parent_comment_id if provided
+        if comment.parent_comment_id:
+            parent_comment = session.get(TaskComment, comment.parent_comment_id)
+            if not parent_comment:
+                raise HTTPException(status_code=404, detail="Parent comment not found")
+            if parent_comment.task_id != comment.task_id:
+                raise HTTPException(status_code=400, detail="Parent comment task mismatch")
+
         new_comment = TaskComment(
             task_id=comment.task_id,
             user_id=current_user.user_id,
-            content=comment.content
+            content=comment.content,
+            parent_comment_id=comment.parent_comment_id
         )
         session.add(new_comment)
         session.commit()
         session.refresh(new_comment)
 
-        #Create a notification for the task owner
+        # Create a notification for the task owner
         create_notification(
             session=session,
             recipient_user_id=task.user_id,
@@ -53,7 +61,7 @@ def add_comment(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Get all comments for a specific task    `GET /comments/task/{task_id}`
+# Get all comments for a specific task
 @router.get("/{task_id}", response_model=List[TaskCommentRead])
 def get_comments_for_task(task_id: str, session: Session = Depends(get_session)):
     try:
@@ -64,7 +72,8 @@ def get_comments_for_task(task_id: str, session: Session = Depends(get_session))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Delete a comment    `DELETE /comments/{comment_id}`
+
+# Delete a comment
 @router.delete("/{comment_id}")
 def delete_comment(
     comment_id: str,
@@ -86,7 +95,7 @@ def delete_comment(
             if project:
                 project_owner_id = project.owner_id
 
-        # Authorization check
+        # Authorization check: Only comment author, task owner, or project owner can delete
         is_author = comment.user_id == current_user.user_id
         is_task_owner = task.user_id == current_user.user_id
         is_project_owner = project_owner_id == current_user.user_id

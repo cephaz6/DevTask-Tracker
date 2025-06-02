@@ -16,7 +16,8 @@ from models.tag import Tag
 from models.user import User
 from models.task_dependency import TaskDependencyLink
 from models.project import Project, ProjectMember
-from models.comment import TaskComment
+from models.comment import TaskComment  
+from models.notification import Notification
 
 
 
