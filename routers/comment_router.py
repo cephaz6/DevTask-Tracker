@@ -1,3 +1,5 @@
+import json
+
 from datetime import datetime
 from typing import Optional, List
 from sqlmodel import select
@@ -12,13 +14,14 @@ from models.comment import TaskComment
 from models.project import Project
 from utils.core import create_notification
 from schemas.notification import NotificationType
+from routers.websocket.ws_comments import active_connections
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
 
 # Add a comment to a task    `POST /comments` (supports replies with parent_comment_id)
 @router.post("/", response_model=TaskCommentRead)
-def add_comment(
+async def add_comment(
     comment: TaskCommentCreate,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -46,11 +49,28 @@ def add_comment(
         session.commit()
         session.refresh(new_comment)
 
-        if new_comment.parent_comment_id:
-            # Notify the parent comment author if this is a reply
-            parent_comment = session.get(TaskComment, new_comment.parent_comment_id)
+        # Send real-time WebSocket message
+        payload = {
+            "type": "reply" if new_comment.parent_comment_id else "comment",
+            "task_id": new_comment.task_id,
+            "comment_id": new_comment.id,
+            "content": new_comment.content,
+            "user_id": new_comment.user_id,
+            "parent_comment_id": new_comment.parent_comment_id,
+            "created_at": new_comment.created_at.isoformat(),
+            "full_name": current_user.full_name
+        }
 
-            if parent_comment and parent_comment.user_id != current_user.user_id:
+        for connection in active_connections.get(str(new_comment.task_id), []):
+            try:
+                await connection.send_text(json.dumps(payload))
+            except Exception:
+                # Optionally: remove dead connection
+                active_connections[str(new_comment.task_id)].remove(connection)
+
+        # Notifications
+        if new_comment.parent_comment_id:
+            if parent_comment.user_id != current_user.user_id:
                 create_notification(
                     session=session,
                     recipient_user_id=parent_comment.user_id,
