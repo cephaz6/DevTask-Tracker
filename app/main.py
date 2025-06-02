@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from db.database import init_db
 from routers import auth_router as auth
@@ -10,6 +11,8 @@ from routers.comment_router import router as comment_router
 from routers.notification_router import router as notification_router
 from routers.dashboard.dashboard_router import router as dashboard_router
 
+#Utilities
+from utils.scheduler import scheduler
 
 from dotenv import load_dotenv
 
@@ -19,12 +22,31 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    # STARTUP
+    if not scheduler.running:
+        scheduler.start()
+        print("Background scheduler started.")
+
     yield
+
+    # SHUTDOWN
+    scheduler.shutdown()
+    print("Background scheduler shut down.")
 
 
 app = FastAPI(lifespan=lifespan)
 
+# Optional: CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Root endpoint
 @app.get("/")
 def root():
     return {"message": "Welcome to DevTask Tracker"}
