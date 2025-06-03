@@ -1,14 +1,9 @@
-from datetime import datetime, timezone
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlmodel import select
 from typing import List
 from models.task import Task
 from models.tag import Tag
-from db.database import get_session
-from schemas.task import TaskCreate, TaskRead, TaskUpdate
-from models.user import User
-from utils.security import get_current_user
 
 
 # _________________________functions definition____________

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from models.task_dependency import TaskDependencyLink
 from db.database import get_session

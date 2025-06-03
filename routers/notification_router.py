@@ -48,8 +48,10 @@ def get_notifications(
         query = select(Notification).where(
             Notification.recipient_user_id == current_user.user_id
         )
-        if unread is True:
-            query = query.where(Notification.read == False)
+        # if unread is True:
+        #     query = query.where(Notification.read == False)
+        if unread is not None:
+            query = query.where(Notification.is_read == (not unread))
 
         notifications = session.exec(
             query.order_by(Notification.created_at.desc())

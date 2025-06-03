@@ -4,7 +4,7 @@ from typing import List
 
 from models.project import Project, ProjectMember
 from models.user import User
-from schemas.project import ProjectCreate, ProjectRead, ProjectMemberRead
+from schemas.project import ProjectCreate, ProjectRead
 
 from db.database import get_session
 from utils.security import get_current_user

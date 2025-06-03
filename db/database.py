@@ -1,7 +1,6 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import create_engine, Session
 import os
-from sqlalchemy import create_engine, MetaData
-from sqlmodel import Session
+from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
 

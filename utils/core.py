@@ -1,10 +1,8 @@
 import secrets, string
 from typing import Optional
-from fastapi import HTTPException, Depends, APIRouter, Query
 from sqlmodel import Session
 from models.notification import Notification
 from schemas.notification import NotificationType
-from db.database import get_session
 from models.task import Task
 
 

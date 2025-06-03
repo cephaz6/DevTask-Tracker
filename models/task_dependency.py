@@ -4,11 +4,7 @@
 
 # It helps users define workflows and dependencies early.
 
-from sqlmodel import SQLModel, Field, Relationship
-
-
 from sqlmodel import SQLModel, Field
-from typing import Optional
 
 
 class TaskDependencyLink(SQLModel, table=True):

@@ -11,7 +11,7 @@ from db.database import engine
 def check_due_dates():
     try:
         with Session(engine) as session:
-            now = datetime.utcnow()
+            now = datetime.now()
             tomorrow = now + timedelta(days=1)
 
             tasks = session.exec(select(Task).where(Task.due_date != None)).all()

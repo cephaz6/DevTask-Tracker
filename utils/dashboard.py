@@ -1,13 +1,10 @@
 from models.user import User
 from models.project import Project, ProjectMember
 from models.task import Task, TaskAssignment
-from typing import Dict, Any
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlmodel import select, func
-from datetime import datetime
 import logging
-from db.database import get_session
 
 
 # _____________________________ Dashboard Utils _____________________________

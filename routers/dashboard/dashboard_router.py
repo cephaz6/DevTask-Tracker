@@ -64,6 +64,7 @@ def get_dashboard(
             )
         except Exception as e:
             # log error e
+            print(f"Error fetching project memberships: {e}")
             raise HTTPException(
                 status_code=500, detail="Error fetching project memberships"
             )
@@ -82,6 +83,7 @@ def get_dashboard(
                 response["owned_projects"].append(proj_data)
         except Exception as e:
             # log error e
+            print(f"Error assembling owned projects dashboard: {e}")
             raise HTTPException(
                 status_code=500, detail="Error assembling owned projects dashboard"
             )
@@ -108,6 +110,7 @@ def get_dashboard(
                 )
         except Exception as e:
             # log error e
+            print(f"Error assembling member projects dashboard: {e}")
             raise HTTPException(
                 status_code=500, detail="Error assembling member projects dashboard"
             )
@@ -116,6 +119,7 @@ def get_dashboard(
 
     except Exception as e:
         # log error e (fallback)
+        print(f"Unexpected error in get_dashboard: {e}")
         raise HTTPException(status_code=500, detail="Unexpected server error")
 
 
