@@ -1,5 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
 import os
+from sqlalchemy import create_engine, MetaData
+from sqlmodel import Session
 from dotenv import load_dotenv
 
 
@@ -8,7 +10,7 @@ load_dotenv()
 
 
 # Get the database URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./devtask_tracker.db")
 engine = create_engine(DATABASE_URL, echo=True)
 
 #Dependency to get a session
