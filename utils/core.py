@@ -8,13 +8,13 @@ from db.database import get_session
 from models.task import Task
 
 
-
 # This file contains utility functions for the application.
 # The functions are used to generate random strings for user IDs and passwords.
 def generate_user_id():
 
     alphabet = string.ascii_lowercase + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(16))
+    return "".join(secrets.choice(alphabet) for i in range(16))
+
 
 # This function creates a notification in the database.
 def create_notification(
@@ -23,7 +23,7 @@ def create_notification(
     message: str,
     notif_type: NotificationType = NotificationType.GENERAL,
     task_id: Optional[str] = None,
-    project_id: Optional[str] = None 
+    project_id: Optional[str] = None,
 ):
     try:
         # Auto-resolve project_id from task_id if not provided
@@ -37,7 +37,7 @@ def create_notification(
             message=message,
             type=notif_type,
             related_task_id=task_id,
-            related_project_id=project_id
+            related_project_id=project_id,
         )
         session.add(notification)
         session.commit()
@@ -47,4 +47,3 @@ def create_notification(
     except Exception as e:
         session.rollback()
         raise Exception(f"Notification failed: {str(e)}")
-

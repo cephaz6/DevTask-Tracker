@@ -24,7 +24,7 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 async def add_comment(
     comment: TaskCommentCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         task = session.get(Task, comment.task_id)
@@ -37,13 +37,15 @@ async def add_comment(
             if not parent_comment:
                 raise HTTPException(status_code=404, detail="Parent comment not found")
             if parent_comment.task_id != comment.task_id:
-                raise HTTPException(status_code=400, detail="Parent comment task mismatch")
+                raise HTTPException(
+                    status_code=400, detail="Parent comment task mismatch"
+                )
 
         new_comment = TaskComment(
             task_id=comment.task_id,
             user_id=current_user.user_id,
             content=comment.content,
-            parent_comment_id=comment.parent_comment_id
+            parent_comment_id=comment.parent_comment_id,
         )
         session.add(new_comment)
         session.commit()
@@ -58,7 +60,7 @@ async def add_comment(
             "user_id": new_comment.user_id,
             "parent_comment_id": new_comment.parent_comment_id,
             "created_at": new_comment.created_at.isoformat(),
-            "full_name": current_user.full_name
+            "full_name": current_user.full_name,
         }
 
         for connection in active_connections.get(str(new_comment.task_id), []):
@@ -76,7 +78,7 @@ async def add_comment(
                     recipient_user_id=parent_comment.user_id,
                     message=f"{current_user.full_name} replied to your comment on task '{task.title}'",
                     notif_type=NotificationType.COMMENT_REPLY,
-                    task_id=comment.task_id
+                    task_id=comment.task_id,
                 )
         else:
             # Create a notification for the task owner
@@ -86,7 +88,7 @@ async def add_comment(
                     recipient_user_id=task.user_id,
                     message=f"{current_user.full_name} commented on your task '{task.title}'",
                     notif_type=NotificationType.COMMENT,
-                    task_id=comment.task_id
+                    task_id=comment.task_id,
                 )
 
         return new_comment
@@ -94,7 +96,6 @@ async def add_comment(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 # Get all comments for a specific task
@@ -114,7 +115,7 @@ def get_comments_for_task(task_id: str, session: Session = Depends(get_session))
 def delete_comment(
     comment_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         comment = session.get(TaskComment, comment_id)
@@ -137,7 +138,9 @@ def delete_comment(
         is_project_owner = project_owner_id == current_user.user_id
 
         if not (is_author or is_task_owner or is_project_owner):
-            raise HTTPException(status_code=403, detail="You are not authorized to delete this comment")
+            raise HTTPException(
+                status_code=403, detail="You are not authorized to delete this comment"
+            )
 
         session.delete(comment)
         session.commit()

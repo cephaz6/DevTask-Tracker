@@ -10,15 +10,14 @@ from alembic import context
 from sqlmodel import SQLModel
 
 # Ensure the parent directory is in the path to import models
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from models.task import Task, TaskAssignment
 from models.tag import Tag
 from models.user import User
 from models.task_dependency import TaskDependencyLink
 from models.project import Project, ProjectMember
-from models.comment import TaskComment  
+from models.comment import TaskComment
 from models.notification import Notification
-
 
 
 # this is the Alembic Config object, which provides
@@ -80,9 +79,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

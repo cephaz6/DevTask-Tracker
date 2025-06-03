@@ -10,17 +10,20 @@ from utils.security import get_current_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
+
 # Create a new notification    `POST /notifications`
 @router.post("/", response_model=NotificationRead)
 def create_notification(
     data: NotificationCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         # Prevent sending notification to oneself
         if data.recipient_user_id == current_user.user_id:
-            raise HTTPException(status_code=400, detail="Cannot send notification to yourself")
+            raise HTTPException(
+                status_code=400, detail="Cannot send notification to yourself"
+            )
 
         notification = Notification(**data.model_dump())
         session.add(notification)
@@ -33,20 +36,24 @@ def create_notification(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Get all notifications for the current user    `GET /notifications` and filter by unread status 
+# Get all notifications for the current user    `GET /notifications` and filter by unread status
 # `GET /notifications?unread=true`
 @router.get("/", response_model=List[NotificationRead])
 def get_notifications(
     unread: Optional[bool] = Query(default=None),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
-        query = select(Notification).where(Notification.recipient_user_id == current_user.user_id)
+        query = select(Notification).where(
+            Notification.recipient_user_id == current_user.user_id
+        )
         if unread is True:
             query = query.where(Notification.read == False)
 
-        notifications = session.exec(query.order_by(Notification.created_at.desc())).all()
+        notifications = session.exec(
+            query.order_by(Notification.created_at.desc())
+        ).all()
         return notifications
 
     except Exception as e:
@@ -58,14 +65,16 @@ def get_notifications(
 def delete_notification(
     notification_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         notification = session.get(Notification, notification_id)
         if not notification:
             raise HTTPException(status_code=404, detail="Notification not found")
         if notification.recipient_user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this notification")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this notification"
+            )
 
         session.delete(notification)
         session.commit()
@@ -74,14 +83,16 @@ def delete_notification(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 # Mark a notification as read    `PUT /notifications/{notification_id}/read`
 @router.patch("/{notification_id}/read", response_model=NotificationRead)
 def mark_notification_as_read(
-    notification_id: str = Path(..., description="ID of the notification to mark as read"),
+    notification_id: str = Path(
+        ..., description="ID of the notification to mark as read"
+    ),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         notification = session.get(Notification, notification_id)
@@ -90,7 +101,9 @@ def mark_notification_as_read(
             raise HTTPException(status_code=404, detail="Notification not found")
 
         if notification.recipient_user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to modify this notification")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to modify this notification"
+            )
 
         notification.read = True
         session.add(notification)

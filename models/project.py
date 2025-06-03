@@ -6,7 +6,8 @@ from uuid import uuid4
 
 if TYPE_CHECKING:
     from .task import Task
-    from .user import User  
+    from .user import User
+
 
 # This model represents a project, which can have multiple members and tasks.
 class Project(SQLModel, table=True):
@@ -22,7 +23,7 @@ class Project(SQLModel, table=True):
     tasks: List["Task"] = Relationship(back_populates="project")
 
 
-#this model represents the many-to-many relationship between projects and project members
+# this model represents the many-to-many relationship between projects and project members
 class ProjectMember(SQLModel, table=True):
     __tablename__ = "project_members"
 
@@ -33,4 +34,3 @@ class ProjectMember(SQLModel, table=True):
 
     project: "Project" = Relationship(back_populates="members")
     user: "User" = Relationship(back_populates="project_memberships")
-

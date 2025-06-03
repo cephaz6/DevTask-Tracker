@@ -11,6 +11,7 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     pass
 
+
 class ProjectRead(ProjectBase):
     id: str
     owner_id: str
@@ -18,6 +19,7 @@ class ProjectRead(ProjectBase):
 
     class Config:
         orm_mode = True
+
 
 class ProjectMemberRead(BaseModel):
     id: str
@@ -33,8 +35,8 @@ class ProjectMemberCreate(BaseModel):
     project_id: str
     user_id: str
 
+
 class ProjectRoleUpdate(BaseModel):
     project_id: str
     user_id: str
     role: str
-

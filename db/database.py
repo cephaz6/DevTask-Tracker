@@ -13,10 +13,12 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./devtask_tracker.db")
 engine = create_engine(DATABASE_URL, echo=True)
 
-#Dependency to get a session
+
+# Dependency to get a session
 def get_session():
     with Session(engine) as session:
         yield session
+
 
 # Function to create the database tables
 def init_db():

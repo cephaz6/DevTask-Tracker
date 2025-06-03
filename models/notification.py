@@ -4,8 +4,10 @@ from datetime import datetime
 from uuid import uuid4
 from schemas.notification import NotificationType
 
+
 class Notification(SQLModel, table=True):
     """Model for user notifications."""
+
     __tablename__ = "notifications"
 
     id: Optional[str] = Field(default_factory=lambda: uuid4().hex, primary_key=True)

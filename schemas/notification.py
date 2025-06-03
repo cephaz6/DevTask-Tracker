@@ -11,10 +11,12 @@ class NotificationType(str, Enum):
     TASK_ASSIGNMENT = "task_assignment"
     PROJECT_INVITE = "project_invite"
 
+
 class NotificationBase(BaseModel):
     recipient_user_id: str
     message: str
     related_project_id: Optional[str] = None
+
 
 class NotificationCreate(BaseModel):
     recipient_user_id: str
@@ -22,6 +24,7 @@ class NotificationCreate(BaseModel):
     related_task_id: Optional[str] = None
     related_project_id: Optional[str] = None
     type: NotificationType = NotificationType.GENERAL
+
 
 class NotificationRead(NotificationCreate):
     id: str

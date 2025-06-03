@@ -7,6 +7,7 @@ router = APIRouter()
 # Track connections per task_id
 active_connections: Dict[str, List[WebSocket]] = defaultdict(list)
 
+
 @router.websocket("/ws/comments/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str):
     await websocket.accept()

@@ -9,6 +9,7 @@ from schemas.task_assignment import TaskWatcher
 
 class TaskStatus(str, Enum):
     """Enumeration for task status."""
+
     not_started = "not_started"
     pending = "pending"
     in_progress = "in_progress"
@@ -27,17 +28,20 @@ class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.not_started  # updated to non-optional with default
-    priority: PriorityLevel = PriorityLevel.medium  # updated to non-optional with default
+    priority: PriorityLevel = (
+        PriorityLevel.medium
+    )  # updated to non-optional with default
     due_date: Optional[datetime] = None
     is_completed: bool = False
-    estimated_time: Optional[float] = 0.25  
-    actual_time: Optional[float] = 0.25  
+    estimated_time: Optional[float] = 0.25
+    actual_time: Optional[float] = 0.25
     tags: List[str] = []  # updated to non-optional with default list
     dependency_ids: Optional[List[str]] = []
-    project_id: Optional[str] = None  
+    project_id: Optional[str] = None
 
     class Config:
         orm_mode = True
+
 
 class TaskSummary(BaseModel):
     id: str
@@ -63,16 +67,16 @@ class TaskRead(BaseModel):
     user_id: str
     project_id: Optional[str] = None
     tags: List[TagReadNested] = []
-    dependencies: List[TaskSummary] = []  
-    comments: List[TaskCommentSummary] = [] 
-    assignments: List[TaskWatcher] = []  
-
+    dependencies: List[TaskSummary] = []
+    comments: List[TaskCommentSummary] = []
+    assignments: List[TaskWatcher] = []
 
     class Config:
         orm_mode = True
         model_config = {"from_attributes": True}
-TaskRead.model_rebuild()
 
+
+TaskRead.model_rebuild()
 
 
 class TaskUpdate(BaseModel):
@@ -81,8 +85,8 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     tags: Optional[List[str]] = None
     due_date: Optional[datetime] = None
-    estimated_time: Optional[float] = None  
-    actual_time: Optional[float] =  None  
+    estimated_time: Optional[float] = None
+    actual_time: Optional[float] = None
     priority: Optional[PriorityLevel] = None
     is_completed: Optional[bool] = None
     dependency_ids: Optional[List[str]] = None

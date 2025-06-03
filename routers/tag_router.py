@@ -6,6 +6,7 @@ from db.database import get_session
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 
+
 @router.post("/", response_model=TagRead)
 def create_tag(tag: TagCreate, session: Session = Depends(get_session)):
     db_tag = session.exec(select(Tag).where(Tag.name == tag.name)).first()
@@ -16,6 +17,7 @@ def create_tag(tag: TagCreate, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(new_tag)
     return new_tag
+
 
 @router.get("/", response_model=list[TagRead])
 def read_tags(session: Session = Depends(get_session)):

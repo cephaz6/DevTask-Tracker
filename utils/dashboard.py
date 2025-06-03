@@ -12,6 +12,7 @@ from db.database import get_session
 
 # _____________________________ Dashboard Utils _____________________________
 
+
 def get_admin_dashboard_data(session: Session) -> dict:
     try:
         total_users = session.exec(select(func.count()).select_from(User)).one()
@@ -25,26 +26,33 @@ def get_admin_dashboard_data(session: Session) -> dict:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching admin dashboard data")
+        raise HTTPException(
+            status_code=500, detail="Error fetching admin dashboard data"
+        )
 
 
-def get_project_dashboard_data(session: Session, project: Project, owner_view: bool = True) -> dict:
+def get_project_dashboard_data(
+    session: Session, project: Project, owner_view: bool = True
+) -> dict:
     try:
         total_tasks = session.exec(
             select(func.count()).select_from(Task).where(Task.project_id == project.id)
         ).one()[0]
 
         completed_tasks = session.exec(
-            select(func.count()).select_from(Task).where(
-                Task.project_id == project.id,
-                Task.status == "completed"
-            )
+            select(func.count())
+            .select_from(Task)
+            .where(Task.project_id == project.id, Task.status == "completed")
         ).one()[0]
 
-        progress_percent = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        progress_percent = (
+            (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+        )
 
         members_count = session.exec(
-            select(func.count()).select_from(ProjectMember).where(ProjectMember.project_id == project.id)
+            select(func.count())
+            .select_from(ProjectMember)
+            .where(ProjectMember.project_id == project.id)
         ).one()[0]
 
         return {
@@ -58,7 +66,10 @@ def get_project_dashboard_data(session: Session, project: Project, owner_view: b
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching project dashboard data")
+        raise HTTPException(
+            status_code=500, detail="Error fetching project dashboard data"
+        )
+
 
 # Serialize task data for dashboard
 def serialize_task(task: Task) -> dict:
@@ -70,7 +81,7 @@ def serialize_task(task: Task) -> dict:
             for assignment in task.assignments:
                 user_info = {
                     "user_id": str(assignment.user_id),
-                    "assigned_at": assignment.assigned_at.isoformat()
+                    "assigned_at": assignment.assigned_at.isoformat(),
                 }
                 if assignment.is_watcher:
                     watchers.append(user_info)
@@ -79,31 +90,31 @@ def serialize_task(task: Task) -> dict:
 
         tags = [tag.name for tag in task.tags] if task.tags else []
 
-        dependencies = [
-            {
-                "id": str(dep.id),
-                "title": dep.title
-            }
-            for dep in task.dependencies
-        ] if task.dependencies else []
+        dependencies = (
+            [{"id": str(dep.id), "title": dep.title} for dep in task.dependencies]
+            if task.dependencies
+            else []
+        )
 
-        dependents = [
-            {
-                "id": str(dep.id),
-                "title": dep.title
-            }
-            for dep in task.dependents
-        ] if task.dependents else []
+        dependents = (
+            [{"id": str(dep.id), "title": dep.title} for dep in task.dependents]
+            if task.dependents
+            else []
+        )
 
-        comments = [
-            {
-                "id": str(comment.id),
-                "author_id": comment.user_id,
-                "content": comment.content,
-                "created_at": comment.created_at.isoformat()
-            }
-            for comment in task.comments
-        ] if task.comments else []
+        comments = (
+            [
+                {
+                    "id": str(comment.id),
+                    "author_id": comment.user_id,
+                    "content": comment.content,
+                    "created_at": comment.created_at.isoformat(),
+                }
+                for comment in task.comments
+            ]
+            if task.comments
+            else []
+        )
 
         return {
             "id": str(task.id),
@@ -117,10 +128,8 @@ def serialize_task(task: Task) -> dict:
             "actual_time": task.actual_time,
             "created_at": task.created_at.isoformat(),
             "updated_at": task.updated_at.isoformat() if task.updated_at else None,
-
             "project_id": task.project_id,
             "owner_id": task.user_id,
-
             "tags": tags,
             "assignees": assignees,
             "watchers": watchers,
@@ -131,7 +140,6 @@ def serialize_task(task: Task) -> dict:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error serializing task data")
-
 
 
 # Get user dashboard data
@@ -154,8 +162,7 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
         member_projects = (
             session.exec(
                 select(Project).where(
-                    Project.id.in_(member_project_ids),
-                    Project.owner_id != user.user_id
+                    Project.id.in_(member_project_ids), Project.owner_id != user.user_id
                 )
             ).all()
             if member_project_ids
@@ -170,7 +177,8 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
         task_ids = [a.task_id for a in assignments]
         assigned_tasks = (
             session.exec(select(Task).where(Task.id.in_(task_ids))).all()
-            if task_ids else []
+            if task_ids
+            else []
         )
 
         # 4. Task summary
@@ -182,7 +190,6 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
             "user_id": str(user.user_id),
             "full_name": f"{user.full_name}",
             "email": user.email,
-            
             "owned_projects": [
                 {"id": str(p.id), "title": p.title} for p in owned_projects
             ],
@@ -197,4 +204,6 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
 
     except Exception as e:
         logging.exception("Error in get_user_dashboard_data")
-        raise HTTPException(status_code=500, detail="Error fetching user dashboard data")
+        raise HTTPException(
+            status_code=500, detail="Error fetching user dashboard data"
+        )

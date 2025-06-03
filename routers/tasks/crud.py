@@ -17,7 +17,6 @@ from .includes import *
 router = APIRouter()
 
 
-
 # Get all tasks    `GET /tasks`
 @router.get("/", response_model=list[TaskRead])
 def get_tasks(session: Session = Depends(get_session)):
@@ -33,53 +32,58 @@ def get_tasks(session: Session = Depends(get_session)):
 @router.get("/my-tasks", response_model=List[TaskRead])
 def get_my_tasks(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     print(f"Current user: {current_user.user_id}")  # Debugging line
     try:
-        statement = select(Task).where(Task.user_id == current_user.user_id)  # <- corrected here
+        statement = select(Task).where(
+            Task.user_id == current_user.user_id
+        )  # <- corrected here
         tasks = session.exec(statement).all()
         return tasks
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not retrieve tasks due to a database error."
+            detail="Could not retrieve tasks due to a database error.",
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred."
+            detail="An unexpected error occurred.",
         )
+
 
 # Get a specific task    `GET /tasks/{task_id}`
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(
     task_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
-        
+
         # Compare the task.user_id (str) with current_user.user_id (str)
         if task.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to view this task")
-        
+            raise HTTPException(
+                status_code=403, detail="Not authorized to view this task"
+            )
+
         return task
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching task")
-    
 
-# Create a new task    `POST /tasks`    
+
+# Create a new task    `POST /tasks`
 @router.post("/", response_model=TaskRead)
 def create_task(
-    task: TaskCreate, 
+    task: TaskCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         if not current_user:
@@ -99,8 +103,7 @@ def create_task(
             if len(tags) != len(task.tags):
                 missing_tag_name = set(task.tags) - {tag.name for tag in tags}
                 raise HTTPException(
-                    status_code=400,
-                    detail=f"Some tags not found: {missing_tag_name}"
+                    status_code=400, detail=f"Some tags not found: {missing_tag_name}"
                 )
             new_task.tags = tags
 
@@ -114,7 +117,9 @@ def create_task(
             ).all()
             if len(dependencies) != len(task.dependency_ids):
                 missing = set(task.dependency_ids) - {t.id for t in dependencies}
-                raise HTTPException(400, detail=f"Some dependencies not found: {missing}")
+                raise HTTPException(
+                    400, detail=f"Some dependencies not found: {missing}"
+                )
             new_task.dependencies = dependencies
 
         session.commit()
@@ -125,7 +130,7 @@ def create_task(
         raise
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 
 # Update a task `PATCH /tasks/{task_id}`
@@ -134,7 +139,7 @@ def update_task(
     task_id: str,
     updated_task: TaskUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         task = session.get(Task, task_id)
@@ -142,7 +147,9 @@ def update_task(
             raise HTTPException(status_code=404, detail="Task not found")
 
         if task.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to update this task")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to update this task"
+            )
 
         update_data = updated_task.model_dump(exclude_unset=True)
 
@@ -176,14 +183,13 @@ def update_task(
         raise HTTPException(status_code=500, detail=f"Failed to update task: {str(e)}")
 
 
-
-#remove tags from a task    `DELETE /tasks/{task_id}/remove-tags`
+# remove tags from a task    `DELETE /tasks/{task_id}/remove-tags`
 @router.delete("/{task_id}/tags/{tag_name}", response_model=TaskRead)
 def remove_tag_from_task(
     task_id: str,
     tag_name: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     task = session.get(Task, task_id)
     if not task:
@@ -200,7 +206,9 @@ def remove_tag_from_task(
     task.tags = [tag for tag in original_tags if tag.name != tag_name]
 
     if len(task.tags) == len(original_tags):
-        raise HTTPException(status_code=404, detail=f"Tag '{tag_name}' not found in task")
+        raise HTTPException(
+            status_code=404, detail=f"Tag '{tag_name}' not found in task"
+        )
 
     task.updated_at = datetime.now(timezone.utc)
     session.add(task)
@@ -215,7 +223,7 @@ def remove_tag_from_task(
 def delete_task(
     task_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         task = session.get(Task, task_id)
@@ -223,7 +231,9 @@ def delete_task(
             raise HTTPException(status_code=404, detail="Task not found")
 
         if task.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this task")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this task"
+            )
 
         session.delete(task)
         session.commit()
@@ -231,7 +241,6 @@ def delete_task(
     except Exception:
         session.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete task")
-    
 
 
 # update task dependencies    `PUT /tasks/{task_id}/dependencies`
@@ -240,7 +249,7 @@ def set_task_dependencies(
     task_id: str,
     dependency_ids: List[str],
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         task = session.get(Task, task_id)
@@ -259,10 +268,14 @@ def set_task_dependencies(
         if len(dependencies) != len(dependency_ids):
             raise HTTPException(status_code=400, detail="Invalid dependency ID(s)")
         if any(dep.user_id != current_user.user_id for dep in dependencies):
-            raise HTTPException(status_code=403, detail="Cross-user linking not allowed")
+            raise HTTPException(
+                status_code=403, detail="Cross-user linking not allowed"
+            )
 
         # Clear old links
-        session.exec(TaskDependencyLink).filter(TaskDependencyLink.task_id == task_id).delete()
+        session.exec(TaskDependencyLink).filter(
+            TaskDependencyLink.task_id == task_id
+        ).delete()
 
         # Add new links
         links = [
@@ -281,4 +294,6 @@ def set_task_dependencies(
         raise
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=f"Dependency update failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Dependency update failed: {str(e)}"
+        )

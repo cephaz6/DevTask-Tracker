@@ -12,12 +12,13 @@ from utils.security import get_current_user
 
 router = APIRouter()
 
+
 # Create a new project    `POST /projects`
 @router.post("/", response_model=ProjectRead)
 def create_project(
     project: ProjectCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         new_project = Project(**project.model_dump(), owner_id=current_user.user_id)
@@ -26,9 +27,7 @@ def create_project(
         session.refresh(new_project)
 
         membership = ProjectMember(
-            project_id=new_project.id,
-            user_id=current_user.user_id,
-            role="owner"
+            project_id=new_project.id, user_id=current_user.user_id, role="owner"
         )
         session.add(membership)
         session.commit()
@@ -38,11 +37,12 @@ def create_project(
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # List all projects for the current user    `GET /projects`
 @router.get("/", response_model=List[ProjectRead])
 def list_projects(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         projects = (
@@ -61,16 +61,18 @@ def list_projects(
 def get_project_by_id(
     project_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         project = session.get(Project, project_id)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        is_member = session.query(ProjectMember).filter_by(
-            project_id=project_id, user_id=current_user.user_id
-        ).first()
+        is_member = (
+            session.query(ProjectMember)
+            .filter_by(project_id=project_id, user_id=current_user.user_id)
+            .first()
+        )
 
         if not is_member:
             raise HTTPException(status_code=403, detail="Not a project member")
@@ -79,12 +81,13 @@ def get_project_by_id(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Update a project    `PUT /projects/{project_id}`
 @router.delete("/{project_id}")
 def delete_project(
     project_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         project = session.get(Project, project_id)
@@ -92,7 +95,9 @@ def delete_project(
             raise HTTPException(status_code=404, detail="Project not found")
 
         if project.owner_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Only the owner can delete the project")
+            raise HTTPException(
+                status_code=403, detail="Only the owner can delete the project"
+            )
 
         session.delete(project)
         session.commit()

@@ -15,6 +15,7 @@ from utils.security import get_current_user
 
 MAX_TAGS = 3
 
+
 # Function to validate and append tags to a task
 def validate_and_append_tags(task: Task, tag_names: List[str], session: Session):
     existing_tag_names = {tag.name for tag in task.tags}
@@ -28,7 +29,7 @@ def validate_and_append_tags(task: Task, tag_names: List[str], session: Session)
         if len(existing_tag_names) >= MAX_TAGS:
             raise HTTPException(
                 status_code=400,
-                detail=f"Each task can have a maximum of {MAX_TAGS} unique tags."
+                detail=f"Each task can have a maximum of {MAX_TAGS} unique tags.",
             )
 
         tag = session.exec(select(Tag).where(Tag.name == tag_name)).first()
@@ -39,5 +40,6 @@ def validate_and_append_tags(task: Task, tag_names: List[str], session: Session)
 
         task.tags.append(tag)
         existing_tag_names.add(tag_name)
+
 
 # ________________________end of functions definition___________________________

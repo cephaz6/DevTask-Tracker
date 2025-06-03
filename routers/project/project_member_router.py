@@ -16,7 +16,7 @@ router = APIRouter()
 def invite_user_to_project(
     invite: ProjectMemberCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         # Check that project exists
@@ -26,11 +26,15 @@ def invite_user_to_project(
 
         # Only owner can invite
         if project.owner_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Only the project owner can invite users")
+            raise HTTPException(
+                status_code=403, detail="Only the project owner can invite users"
+            )
 
         # Prevent self-invitation
         if invite.user_id == current_user.user_id:
-            raise HTTPException(status_code=400, detail="Owner cannot invite themselves")
+            raise HTTPException(
+                status_code=400, detail="Owner cannot invite themselves"
+            )
 
         # Ensure invited user exists
         invited_user = session.exec(
@@ -43,17 +47,17 @@ def invite_user_to_project(
         existing_member = session.exec(
             select(ProjectMember).where(
                 ProjectMember.project_id == invite.project_id,
-                ProjectMember.user_id == invite.user_id
+                ProjectMember.user_id == invite.user_id,
             )
         ).first()
         if existing_member:
-            raise HTTPException(status_code=400, detail="User is already a member of this project")
+            raise HTTPException(
+                status_code=400, detail="User is already a member of this project"
+            )
 
         # All good, create membership
         member = ProjectMember(
-            user_id=invite.user_id,
-            project_id=invite.project_id,
-            role="member"
+            user_id=invite.user_id, project_id=invite.project_id, role="member"
         )
         session.add(member)
         session.commit()
@@ -70,7 +74,7 @@ def invite_user_to_project(
 def list_project_members(
     project_id: str,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         members = session.query(ProjectMember).filter_by(project_id=project_id).all()
@@ -78,12 +82,13 @@ def list_project_members(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Update a member's role in a project    `PATCH /project-members/role`
 @router.patch("/role")
 def update_member_role(
     payload: ProjectRoleUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         project = session.get(Project, payload.project_id)
@@ -91,12 +96,15 @@ def update_member_role(
             raise HTTPException(status_code=404, detail="Project not found")
 
         if project.owner_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Only the owner can update roles")
+            raise HTTPException(
+                status_code=403, detail="Only the owner can update roles"
+            )
 
-        member = session.query(ProjectMember).filter_by(
-            project_id=payload.project_id,
-            user_id=payload.user_id
-        ).first()
+        member = (
+            session.query(ProjectMember)
+            .filter_by(project_id=payload.project_id, user_id=payload.user_id)
+            .first()
+        )
 
         if not member:
             raise HTTPException(status_code=404, detail="User not a project member")
@@ -108,12 +116,13 @@ def update_member_role(
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Remove a member from a project    `DELETE /project-members/remove`
 @router.delete("/remove")
 def remove_project_member(
     payload: ProjectMemberCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         project = session.get(Project, payload.project_id)
@@ -121,12 +130,15 @@ def remove_project_member(
             raise HTTPException(status_code=404, detail="Project not found")
 
         if project.owner_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Only the owner can remove members")
+            raise HTTPException(
+                status_code=403, detail="Only the owner can remove members"
+            )
 
-        member = session.query(ProjectMember).filter_by(
-            project_id=payload.project_id,
-            user_id=payload.user_id
-        ).first()
+        member = (
+            session.query(ProjectMember)
+            .filter_by(project_id=payload.project_id, user_id=payload.user_id)
+            .first()
+        )
 
         if not member:
             raise HTTPException(status_code=404, detail="User not a project member")

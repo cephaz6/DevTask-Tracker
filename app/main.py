@@ -12,7 +12,7 @@ from routers.notification_router import router as notification_router
 from routers.dashboard.dashboard_router import router as dashboard_router
 from routers.websocket import ws_comments  # Import WebSocket handlers
 
-#Utilities
+# Utilities
 from utils.scheduler import scheduler
 
 from dotenv import load_dotenv
@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,6 +53,7 @@ app.add_middleware(
 def root():
     return {"message": "Welcome to DevTask Tracker"}
 
+
 # Include the routers
 # app.include_router(task_router.router)
 app.include_router(auth.router)
@@ -61,6 +63,4 @@ app.include_router(project_router)
 app.include_router(comment_router)
 app.include_router(notification_router)
 app.include_router(dashboard_router)
-app.include_router(ws_comments.router)  
-
-
+app.include_router(ws_comments.router)

@@ -3,20 +3,24 @@ from typing import Optional, TYPE_CHECKING, List
 from datetime import datetime, timezone
 from models.tag import Tag, TaskTagLink
 from models.task_dependency import TaskDependencyLink
-from models.project import Project  
+from models.project import Project
 from models.comment import TaskComment
 import uuid
 
 if TYPE_CHECKING:
     from .user import User
 
+
 def generate_uuid() -> str:
     return uuid.uuid4().hex
+
 
 class Task(SQLModel, table=True):
     __tablename__ = "tasks"
 
-    id: Optional[str] = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    id: Optional[str] = Field(
+        default_factory=generate_uuid, primary_key=True, index=True
+    )
     title: str = Field(index=True)
     description: Optional[str] = None
     status: str = "not_started"
@@ -49,8 +53,8 @@ class Task(SQLModel, table=True):
             "primaryjoin": "Task.id==TaskDependencyLink.task_id",
             "secondaryjoin": "Task.id==TaskDependencyLink.depends_on_id",
             "lazy": "selectin",
-            "overlaps": "dependents"
-        }
+            "overlaps": "dependents",
+        },
     )
 
     dependents: List["Task"] = Relationship(
@@ -60,8 +64,8 @@ class Task(SQLModel, table=True):
             "primaryjoin": "Task.id==TaskDependencyLink.depends_on_id",
             "secondaryjoin": "Task.id==TaskDependencyLink.task_id",
             "lazy": "selectin",
-            "overlaps": "dependencies"
-        }
+            "overlaps": "dependencies",
+        },
     )
 
     def __repr__(self):
@@ -71,7 +75,9 @@ class Task(SQLModel, table=True):
 class TaskAssignment(SQLModel, table=True):
     __tablename__ = "task_assignments"
 
-    id: Optional[str] = Field(default_factory=generate_uuid, primary_key=True, index=True)
+    id: Optional[str] = Field(
+        default_factory=generate_uuid, primary_key=True, index=True
+    )
     task_id: str = Field(foreign_key="tasks.id")
     user_id: str = Field(foreign_key="users.user_id")
     is_watcher: bool = Field(default=False)

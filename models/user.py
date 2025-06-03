@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class User(SQLModel, table=True):
     __tablename__ = "users"
 
-    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)  
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
     user_id: str = Field(default_factory=generate_user_id, unique=True, index=True)
 
     email: EmailStr = Field(index=True, unique=True)

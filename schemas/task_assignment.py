@@ -9,9 +9,11 @@ class TaskAssignmentBase(BaseModel):
     user_id: str
     is_watcher: bool = False  # False => assignee; True => watcher
 
+
 class TaskWatcher(BaseModel):
     user_id: str
     is_watcher: bool = True  # Always True for watchers, False for assignees
+
 
 class TaskAssignmentCreate(TaskAssignmentBase):
     pass
