@@ -24,7 +24,7 @@ def get_tasks(session: Session = Depends(get_session)):
         tasks = session.exec(statement).all()
         return tasks
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to fetch tasks")
+        raise HTTPException(status_code=500, detail="Failed to fetch tasks: " + str(e))
 
 
 # Get all tasks for the current user    `GET /tasks/my-tasks`
@@ -48,8 +48,8 @@ def get_my_tasks(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred.",
-        )
+            detail=(f"An unexpected error occurred.", str(e),
+        ))
 
 
 # Get a specific task    `GET /tasks/{task_id}`
@@ -74,7 +74,7 @@ def get_task(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error fetching task")
+        raise HTTPException(status_code=500, detail="Error fetching task" + str(e))
 
 
 # Create a new task    `POST /tasks`

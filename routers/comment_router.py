@@ -1,7 +1,6 @@
 import json
 
-from datetime import datetime
-from typing import Optional, List
+from typing import List
 from sqlmodel import select
 from models.task import Task
 from models.user import User

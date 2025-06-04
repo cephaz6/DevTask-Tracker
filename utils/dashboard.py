@@ -24,7 +24,7 @@ def get_admin_dashboard_data(session: Session) -> dict:
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail="Error fetching admin dashboard data"
+            status_code=500, detail="Error fetching admin dashboard data" + str(e)
         )
 
 
@@ -64,7 +64,7 @@ def get_project_dashboard_data(
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail="Error fetching project dashboard data"
+            status_code=500, detail="Error fetching project dashboard data" + str(e)
         )
 
 
@@ -136,7 +136,7 @@ def serialize_task(task: Task) -> dict:
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error serializing task data")
+        raise HTTPException(status_code=500, detail="Error serializing task data" + str(e))
 
 
 # Get user dashboard data
@@ -202,5 +202,5 @@ def get_user_dashboard_data(session: Session, user: User) -> dict:
     except Exception as e:
         logging.exception("Error in get_user_dashboard_data")
         raise HTTPException(
-            status_code=500, detail="Error fetching user dashboard data"
+            status_code=500, detail="Error fetching user dashboard data " + str(e)
         )

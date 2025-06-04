@@ -38,6 +38,7 @@ def get_dashboard(
                 return {"role": "superuser", "dashboard": admin_data}
             except Exception as e:
                 # log error e
+                print(f"Error fetching admin dashboard data: {e}")
                 raise HTTPException(
                     status_code=500, detail="Error fetching admin dashboard data"
                 )
@@ -50,6 +51,7 @@ def get_dashboard(
             owned_project_ids = [p.id for p in owned_projects]
         except Exception as e:
             # log error e
+            print(f"Error fetching owned projects: {e}")
             raise HTTPException(status_code=500, detail="Error fetching owned projects")
 
         try:
