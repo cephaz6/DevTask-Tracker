@@ -43,13 +43,13 @@ def get_my_tasks(
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not retrieve tasks due to a database error.",
+            detail="Could not retrieve tasks due to a database error." + str(e),
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=(f"An unexpected error occurred.", str(e),
-        ))
+            detail="An unexpected error occurred." + str(e),
+        )
 
 
 # Get a specific task    `GET /tasks/{task_id}`

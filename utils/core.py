@@ -1,4 +1,5 @@
-import secrets, string
+import secrets
+import string
 from typing import Optional
 from sqlmodel import Session
 from models.notification import Notification
