@@ -13,4 +13,9 @@ __pycache__/
 *.log
 /sessions/
 /instance/
+<<<<<<< HEAD
 Roadmap.md
+=======
+Roadmap.md
+devtask.db
+>>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
