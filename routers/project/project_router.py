@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 
 from models.project import Project, ProjectMember
@@ -55,6 +55,46 @@ def list_projects(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# Get only my projects
+@router.get("/my-projects", response_model=List[ProjectRead]) # ProjectRead needs to correctly define members and tasks
+def get_my_projects(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        # Load projects where user is owner, eager-loading members and tasks
+        owned_projects_query = (
+            session.query(Project)
+            .options(
+                selectinload(Project.members).joinedload(ProjectMember.user), # Load members and their associated user details
+                selectinload(Project.tasks) # Load tasks
+            )
+            .filter(Project.owner_id == current_user.user_id)
+        )
+
+        # Load projects where user is a member, eager-loading members and tasks
+        member_projects_query = (
+            session.query(Project)
+            .options(
+                selectinload(Project.members).joinedload(ProjectMember.user), # Load members and their associated user details
+                selectinload(Project.tasks) # Load tasks
+            )
+            .join(ProjectMember, Project.id == ProjectMember.project_id)
+            .filter(ProjectMember.user_id == current_user.user_id)
+            # .filter(Project.owner_id != current_user.user_id) # Optional: if you want to exclude owned projects from this specific query result
+        )
+
+        all_projects_raw = owned_projects_query.all() + member_projects_query.all()
+        
+        unique_projects_map = {p.id: p for p in all_projects_raw}
+        all_projects = list(unique_projects_map.values())
+
+        return all_projects # SQLAlchemy models with relationships loaded will be serialized by Pydantic
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    
 
 # Get a specific project by ID    `GET /projects/{project_id}`
 @router.get("/{project_id}", response_model=ProjectRead)
