@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from db.database import get_session
 from utils.security import get_current_user
-from sqlalchemy import select
+from sqlalchemy import select  
 
 from models.project import ProjectMember, Project
 from models.user import User
-from schemas.project import ProjectMemberCreate, ProjectMemberRead, ProjectRoleUpdate
+from schemas.project import ProjectMemberCreate, ProjectMemberReadWithUser, ProjectMemberRead, ProjectRoleUpdate
 
 router = APIRouter()
 
@@ -70,17 +70,34 @@ def invite_user_to_project(
 
 
 # List all members of a project    `GET /project-members/{project_id}/members`
-@router.get("/{project_id}/members", response_model=list[ProjectMemberRead])
+# Then in your endpoint:
+@router.get("/{project_id}/members", response_model=list[ProjectMemberReadWithUser]) 
 def list_project_members(
     project_id: str,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        members = session.query(ProjectMember).filter_by(project_id=project_id).all()
-        return members
+        # Load ProjectMember and eagerly load the associated User details
+        members = session.query(ProjectMember).options(joinedload(ProjectMember.user)).filter_by(project_id=project_id).all()
+
+        # You might need to manually construct the response if ProjectMemberRead doesn't include User fields
+        # Or, ideally, define a Pydantic model ProjectMemberReadWithUser that includes User fields
+        return [
+            {
+                "id": member.id,
+                "project_id": member.project_id,
+                "role": member.role,
+                "user_id": member.user_id,
+                "full_name": member.user.full_name, # Access user's full_name
+                "email": member.user.email,         # Access user's email
+                # ... other fields from ProjectMemberRead if needed
+            }
+            for member in members
+        ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # Update a member's role in a project    `PATCH /project-members/role`

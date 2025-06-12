@@ -1,10 +1,7 @@
 from datetime import datetime
 from sqlmodel import SQLModel
 from typing import Optional, List
-<<<<<<< HEAD
 from .user import UserRead
-=======
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
 
 
 class TaskCommentBase(SQLModel):
@@ -21,10 +18,7 @@ class TaskCommentRead(TaskCommentBase):
     id: str
     user_id: str
     created_at: datetime
-<<<<<<< HEAD
     user: Optional[UserRead]
-=======
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
 
     class Config:
         orm_mode = True

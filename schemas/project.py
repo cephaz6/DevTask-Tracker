@@ -40,3 +40,9 @@ class ProjectRoleUpdate(BaseModel):
     project_id: str
     user_id: str
     role: str
+
+
+class ProjectMemberReadWithUser(ProjectMemberRead):
+    full_name: str | None
+    email: str | None
+    # Add other user fields if needed

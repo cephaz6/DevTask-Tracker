@@ -133,7 +133,7 @@ def create_task(
 
 
 # Update a task `PATCH /tasks/{task_id}`
-@router.patch("/{task_id}", response_model=TaskRead)
+@router.put("/{task_id}", response_model=TaskRead)
 def update_task(
     task_id: str,
     updated_task: TaskUpdate,

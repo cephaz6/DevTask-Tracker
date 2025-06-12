@@ -1,10 +1,6 @@
 import json
 
-<<<<<<< HEAD
 from typing import List, Optional
-=======
-from typing import List
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
 from sqlmodel import select
 from models.task import Task
 from models.user import User
@@ -17,14 +13,10 @@ from models.comment import TaskComment
 from models.project import Project
 from utils.core import create_notification
 from schemas.notification import NotificationType
-<<<<<<< HEAD
 from routers.websocket.ws_comments import active_connections # Assuming this import path is correct
 
 # Import selectinload for eager loading relationships
 from sqlalchemy.orm import selectinload
-=======
-from routers.websocket.ws_comments import active_connections
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -112,23 +104,17 @@ async def add_comment(
 @router.get("/{task_id}", response_model=List[TaskCommentRead])
 def get_comments_for_task(task_id: str, session: Session = Depends(get_session)):
     try:
-<<<<<<< HEAD
         # Use selectinload to eagerly load the 'user' relationship
         comments = session.exec(
             select(TaskComment)
             .where(TaskComment.task_id == task_id)
             .options(selectinload(TaskComment.user)) # This is the essential line!
-=======
-        comments = session.exec(
-            select(TaskComment).where(TaskComment.task_id == task_id)
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
         ).all()
         return comments
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-<<<<<<< HEAD
 # Get a specific comment by its ID
 @router.get("/comment/{comment_id}", response_model=TaskCommentRead)
 def get_comment_by_id(comment_id: str, session: Session = Depends(get_session)):
@@ -147,8 +133,6 @@ def get_comment_by_id(comment_id: str, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-=======
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
 # Delete a comment
 @router.delete("/{comment_id}")
 def delete_comment(
@@ -173,11 +157,7 @@ def delete_comment(
 
         # Authorization check: Only comment author, task owner, or project owner can delete
         is_author = comment.user_id == current_user.user_id
-<<<<<<< HEAD
         is_task_owner = task.user_id == current_user.user_id # Assuming task.user_id is the owner ID
-=======
-        is_task_owner = task.user_id == current_user.user_id
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
         is_project_owner = project_owner_id == current_user.user_id
 
         if not (is_author or is_task_owner or is_project_owner):
@@ -189,15 +169,9 @@ def delete_comment(
         session.commit()
         return {"message": "Comment deleted successfully"}
 
-<<<<<<< HEAD
     except HTTPException as e:
         session.rollback()
         raise e
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-=======
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
->>>>>>> a5bd8487c91f1e5247a15fbd694a109d3215c472
