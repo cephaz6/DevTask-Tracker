@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 from typing import List
-
+from sqlalchemy import or_
 from models.project import Project, ProjectMember
 from models.user import User
 from schemas.project import ProjectCreate, ProjectRead
@@ -95,6 +95,51 @@ def get_my_projects(
         raise HTTPException(status_code=500, detail=str(e))
 
     
+# Get a specific project detail
+@router.get("/{project_id}/details", response_model=ProjectRead)
+def get_project_details(
+    project_id: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        # First, check if the user is authorized (owner or member)
+        is_member_or_owner = (
+            session.query(Project)
+            .join(ProjectMember, isouter=True)
+            .filter(
+                Project.id == project_id,
+                or_(
+                    Project.owner_id == current_user.user_id,
+                    ProjectMember.user_id == current_user.user_id
+                )
+            )
+            .first()
+        )
+
+        if not is_member_or_owner:
+            raise HTTPException(status_code=403, detail="You are not authorized to view this project.")
+
+        # Then fetch project with members + tasks
+        project = (
+            session.query(Project)
+            .options(
+                selectinload(Project.tasks),
+                selectinload(Project.members).joinedload(ProjectMember.user),
+            )
+            .filter(Project.id == project_id)
+            .first()
+        )
+
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return project
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 # Get a specific project by ID    `GET /projects/{project_id}`
 @router.get("/{project_id}", response_model=ProjectRead)

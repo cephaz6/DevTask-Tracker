@@ -1,6 +1,7 @@
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
+from .task import TaskRead
 
 
 class ProjectBase(BaseModel):
@@ -58,6 +59,7 @@ class TaskReadMinimal(BaseModel):
     id: str
     title: str
     status: str # Only include fields you want to expose
+    priority: str
 
     class Config:
         orm_mode = True
@@ -71,7 +73,7 @@ class ProjectRead(BaseModel):
     # owner: Optional[UserReadMinimal] # If you want to expose owner details directly
 
     members: List[ProjectMemberReadWithUser] = [] # List of project members with user details
-    tasks: List[TaskReadMinimal] = [] # List of associated tasks
+    tasks: List[TaskRead] = [] # List of associated tasks
 
     class Config:
         orm_mode = True
