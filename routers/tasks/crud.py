@@ -65,10 +65,10 @@ def get_task(
             raise HTTPException(status_code=404, detail="Task not found")
 
         # Compare the task.user_id (str) with current_user.user_id (str)
-        if task.user_id != current_user.user_id:
-            raise HTTPException(
-                status_code=403, detail="Not authorized to view this task"
-            )
+        # if task.user_id != current_user.user_id:
+        #     raise HTTPException(
+        #         status_code=403, detail="Not authorized to view this task"
+        #     )
 
         return task
     except HTTPException:

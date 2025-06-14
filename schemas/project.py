@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from .task import TaskRead
 
@@ -23,11 +23,14 @@ class ProjectMemberRead(BaseModel):
     class Config:
         orm_mode = True
 
-
-class ProjectMemberCreate(BaseModel):
+class ProjectMemberRemoveRequest(BaseModel):
     project_id: str
     user_id: str
 
+class ProjectMemberCreate(BaseModel):
+    project_id: str
+    user_identifier: str  # Single field to receive either user_id or email
+    role: str = "member"  
 
 class ProjectRoleUpdate(BaseModel):
     project_id: str

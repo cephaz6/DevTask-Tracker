@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from db.database import get_session
 from utils.security import get_current_user
 from sqlalchemy import select  
+from typing import Optional
 
 from models.project import ProjectMember, Project
 from models.user import User
-from schemas.project import ProjectMemberCreate, ProjectMemberReadWithUser, ProjectMemberRead, ProjectRoleUpdate
+from schemas.project import ProjectMemberCreate,ProjectMemberRemoveRequest, ProjectMemberReadWithUser, ProjectMemberRead, ProjectRoleUpdate
 
 router = APIRouter()
 
@@ -14,59 +15,85 @@ router = APIRouter()
 # Invite a user to a project    `POST /project-members/invite`
 @router.post("/invite", response_model=ProjectMemberRead)
 def invite_user_to_project(
-    invite: ProjectMemberCreate,
+    invite: ProjectMemberCreate, # Expects ProjectMemberCreate with 'user_identifier'
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        # Check that project exists
+        # 1. Check that project exists
         project = session.get(Project, invite.project_id)
         if not project:
-            raise HTTPException(status_code=403, detail="Project not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
 
-        # Only owner can invite
+        # 2. Only owner can invite
         if project.owner_id != current_user.user_id:
             raise HTTPException(
-                status_code=403, detail="Only the project owner can invite users"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Only the project owner can invite users."
             )
 
-        # Prevent self-invitation
-        if invite.user_id == current_user.user_id:
-            raise HTTPException(
-                status_code=400, detail="Owner cannot invite themselves"
-            )
+        # 3. Find the invited user by user_identifier (ID or email)
+        invited_user: Optional[User] = None
+        user_identifier_trimmed = invite.user_identifier.strip()
 
-        # Ensure invited user exists
-        invited_user = session.exec(
-            select(User).where(User.user_id == invite.user_id)
-        ).first()
+        if "@" in user_identifier_trimmed:
+            # If it contains '@', assume it's an email
+            invited_user = session.exec(
+                select(User).where(User.email == user_identifier_trimmed)
+            ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
+        else:
+            # Otherwise, assume it's a user_id
+            invited_user = session.exec(
+                select(User).where(User.user_id == user_identifier_trimmed)
+            ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
+
+        # Debugging print (remove in production)
+        print(f"DEBUG: user_identifier_trimmed={user_identifier_trimmed}, invited_user={invited_user}")
+
+        # Ensure the invited user was found
         if not invited_user:
-            raise HTTPException(status_code=404, detail="Invited user not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invited user not found with the provided identifier.")
 
-        # Prevent duplicate invitations
+        # At this point, invited_user is guaranteed to be a User object.
+        actual_invited_user_id = invited_user.user_id
+
+        # 4. Prevent self-invitation
+        if actual_invited_user_id == current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot invite yourself to a project."
+            )
+
+        # 5. Prevent duplicate invitations
         existing_member = session.exec(
             select(ProjectMember).where(
                 ProjectMember.project_id == invite.project_id,
-                ProjectMember.user_id == invite.user_id,
+                ProjectMember.user_id == actual_invited_user_id, # Use the confirmed user ID
             )
-        ).first()
+        ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
         if existing_member:
             raise HTTPException(
-                status_code=400, detail="User is already a member of this project"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member of this project."
             )
 
-        # All good, create membership
+        # 6. All checks passed, create the new project member
         member = ProjectMember(
-            user_id=invite.user_id, project_id=invite.project_id, role="member"
+            user_id=actual_invited_user_id, # Use the actual user_id from the found User object
+            project_id=invite.project_id,
+            role=invite.role # Use the role specified in the invitation payload
         )
         session.add(member)
         session.commit()
         session.refresh(member)
         return member
 
+    except HTTPException as http_e:
+        session.rollback()
+        raise http_e # Re-raise FastAPI's HTTPExceptions directly
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log unexpected errors for debugging
+        print(f"An unexpected error occurred during project member invitation: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected server error occurred: {str(e)}")
+
 
 
 # List all members of a project    `GET /project-members/{project_id}/members`
@@ -137,32 +164,69 @@ def update_member_role(
 # Remove a member from a project    `DELETE /project-members/remove`
 @router.delete("/remove")
 def remove_project_member(
-    payload: ProjectMemberCreate,
+    payload: ProjectMemberRemoveRequest, # Use the new, specific schema for removal
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     try:
+        # 1. Check that project exists
         project = session.get(Project, payload.project_id)
         if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
 
+        # 2. Only project owner can remove members
         if project.owner_id != current_user.user_id:
             raise HTTPException(
-                status_code=403, detail="Only the owner can remove members"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Only the project owner can remove members."
             )
+        
+        # 3. Prevent owner from removing themselves if they are the ONLY owner
+        # This is a critical edge case to prevent projects from becoming ownerless.
+        # If the project can have multiple owners, you might allow owners to remove each other
+        # as long as at least one owner remains. For simplicity, this assumes a single owner.
+        if payload.user_id == project.owner_id and current_user.user_id == project.owner_id:
+            # Check if there's at least one other owner before allowing owner to remove themselves
+            # This logic depends on your 'role' management. Assuming 'owner' is a distinct role.
+            all_members_in_project = session.exec(
+                select(ProjectMember).where(ProjectMember.project_id == project.id)
+            ).all()
 
-        member = (
-            session.query(ProjectMember)
-            .filter_by(project_id=payload.project_id, user_id=payload.user_id)
-            .first()
-        )
+            other_owners_exist = False
+            for member in all_members_in_project:
+                if member.role == "owner" and member.user_id != payload.user_id:
+                    other_owners_exist = True
+                    break
+            
+            if not other_owners_exist and payload.user_id == project.owner_id:
+                 raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot remove the sole project owner without assigning another owner first."
+                )
 
-        if not member:
-            raise HTTPException(status_code=404, detail="User not a project member")
 
-        session.delete(member)
+        # 4. Find the specific project member to remove using new query syntax
+        member_to_remove = session.exec(
+            select(ProjectMember).where(
+                ProjectMember.project_id == payload.project_id,
+                ProjectMember.user_id == payload.user_id,
+            )
+        ).scalar_one_or_none() # Use scalar_one_or_none for single result
+
+        if not member_to_remove:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User is not a member of this project or member not found.")
+        
+        # 5. Perform the deletion
+        session.delete(member_to_remove)
         session.commit()
-        return {"message": "Member removed successfully"}
+        
+        # 6. Return a success message (FastAPI will serialize it to JSON)
+        return {"message": "Member removed successfully."}
+
+    except HTTPException as http_e:
+        session.rollback()
+        raise http_e # Re-raise FastAPI's HTTPExceptions directly
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the unexpected error for debugging on the server side
+        print(f"An unexpected error occurred during project member removal: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected server error occurred: {str(e)}")
