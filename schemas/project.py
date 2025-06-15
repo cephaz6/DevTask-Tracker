@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from .task import TaskRead
+from .user import UserReadMinimal
 
 
 class ProjectBase(BaseModel):
@@ -13,12 +14,12 @@ class ProjectCreate(ProjectBase):
     pass
 
 
-
 class ProjectMemberRead(BaseModel):
     id: str
     user_id: str
     project_id: str
     role: str
+    user: Optional[UserReadMinimal] = None
 
     class Config:
         orm_mode = True
@@ -43,10 +44,7 @@ class ProjectMemberReadWithUser(ProjectMemberRead):
     email: str | None
     # Add other user fields if needed
 
-class UserReadMinimal(BaseModel):
-    user_id: str
-    full_name: Optional[str] = None
-    email: Optional[str] = None
+
 
 class ProjectMemberReadWithUser(BaseModel):
     id: str
@@ -77,6 +75,7 @@ class ProjectRead(BaseModel):
     description: Optional[str] = None
     owner_id: str
     created_at: datetime
+    
     # owner: Optional[UserReadMinimal] # If you want to expose owner details directly
 
     members: List[ProjectMemberReadWithUser] = [] # List of project members with user details

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload 
 from db.database import get_session
 from utils.security import get_current_user
 from sqlalchemy import select  
@@ -98,32 +98,55 @@ def invite_user_to_project(
 
 # List all members of a project    `GET /project-members/{project_id}/members`
 # Then in your endpoint:
-@router.get("/{project_id}/members", response_model=list[ProjectMemberReadWithUser]) 
+@router.get("/{project_id}/members", response_model=list[ProjectMemberReadWithUser])
 def list_project_members(
     project_id: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session), # Assuming get_session is your DB session dependency
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Retrieves a list of members for a specific project.
+    Eager-loads user details for each project member.
+    """
     try:
-        # Load ProjectMember and eagerly load the associated User details
-        members = session.query(ProjectMember).options(joinedload(ProjectMember.user)).filter_by(project_id=project_id).all()
+        # --- Access Control Check ---
+        # Ensure the current user is a member of the project they are trying to query members for.
+        project_access_check = session.exec(
+            select(ProjectMember).where(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == current_user.user_id
+            )
+        ).first()
 
-        # You might need to manually construct the response if ProjectMemberRead doesn't include User fields
-        # Or, ideally, define a Pydantic model ProjectMemberReadWithUser that includes User fields
-        return [
-            {
-                "id": member.id,
-                "project_id": member.project_id,
-                "role": member.role,
-                "user_id": member.user_id,
-                "full_name": member.user.full_name, # Access user's full_name
-                "email": member.user.email,         # Access user's email
-                # ... other fields from ProjectMemberRead if needed
-            }
-            for member in members
-        ]
+        if not project_access_check:
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to view members of this project. You must be a member."
+            )
+        # --- End Access Control Check ---
+
+        # Load ProjectMember objects and eagerly load their associated User details.
+        # Using selectinload for efficient loading of relationships in a list.
+        members = session.exec(
+            select(ProjectMember)
+            .options(selectinload(ProjectMember.user)) # Only selectinload here
+            .where(ProjectMember.project_id == project_id)
+        ).scalars().all()
+
+        # Explicitly validate and convert each ORM object to the Pydantic response model.
+        # This provides a more explicit input type for Pydantic's validation.
+        return [ProjectMemberReadWithUser.model_validate(member.model_dump()) for member in members]
+
+    except HTTPException as e:
+        # Re-raise FastAPI HTTPExceptions directly
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Catch any other unexpected errors, log them, and return a generic 500 error
+        print(f"Error in list_project_members for project {project_id} by user {current_user.user_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="An internal server error occurred while fetching project members."
+        )
 
 
 

@@ -120,3 +120,4 @@ class TaskUpdate(BaseModel):
             self.is_completed = (self.status == TaskStatus.completed)
         # If status is not provided in the update, keep the existing is_completed value
         return self
+

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlalchemy.orm import Session
-from sqlmodel import select
+from sqlmodel import select, delete
 
 from models.task import Task
 from models.task import TaskAssignment
@@ -41,6 +41,81 @@ def _authorize_task_modification(task: Task, current_user: User, session: Sessio
     raise HTTPException(
         status_code=403, detail="Not authorized to modify task assignments"
     )
+
+
+#Assign Users to this task
+@router.put("/{task_id}/assignments", response_model=Task)
+def update_task_assignments(
+    task_id: str,
+    payload: dict,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        new_user_ids: List[str] = payload.get("user_ids", [])
+        task = session.get(Task, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        _authorize_task_modification(task, current_user, session)
+
+        # Fetch current assignees (excluding watchers)
+        existing_assignments = session.exec(
+            select(TaskAssignment).where(
+                TaskAssignment.task_id == task_id,
+                TaskAssignment.is_watcher == False,
+            )
+        ).all()
+
+        current_user_ids = {a.user_id for a in existing_assignments}
+        new_user_ids_set = set(new_user_ids)
+
+        # Determine which users to remove and which to add
+        to_remove = current_user_ids - new_user_ids_set
+        to_add = new_user_ids_set - current_user_ids
+
+        # Remove assignments (non-watchers only)
+        session.exec(
+            delete(TaskAssignment).where(
+                TaskAssignment.task_id == task_id,
+                TaskAssignment.user_id.in_(to_remove),
+                TaskAssignment.is_watcher == False
+            )
+        )
+
+        # Add new assignments
+        for user_id in to_add:
+            user = session.exec(select(User).where(User.user_id == user_id)).first()
+            if not user:
+                raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
+            assignment = TaskAssignment(
+                task_id=task_id,
+                user_id=user_id,
+                is_watcher=False,
+            )
+            session.add(assignment)
+
+            # Send notification (excluding self-assignment)
+            if user.user_id != current_user.user_id:
+                notif_msg = f"{current_user.full_name} assigned you to the task: '{task.title}'"
+                create_notification(
+                    session=session,
+                    recipient_user_id=user.user_id,
+                    message=notif_msg,
+                    task_id=task_id,
+                    notif_type=NotificationType.TASK_ASSIGNMENT,
+                )
+
+        session.commit()
+        session.refresh(task)
+        return task
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Assign a user to a task as an assignee or watcher
