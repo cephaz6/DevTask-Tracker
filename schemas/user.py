@@ -26,6 +26,14 @@ class UserRead(BaseModel):
         orm_mode = True
 
 
+class UserReadMinimal(BaseModel):
+    user_id: str
+    email: str
+    full_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True # For Pydantic V2
+        
 # Schema for user login (authentication)
 class UserLogin(BaseModel):
     email: EmailStr

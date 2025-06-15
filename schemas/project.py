@@ -48,12 +48,16 @@ class UserReadMinimal(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
 
-class ProjectMemberReadWithUser(BaseModel): # This is the ProjectMemberRead for frontend consumption
+class ProjectMemberReadWithUser(BaseModel):
     id: str
     user_id: str
     project_id: str
     role: str
-    user: Optional[UserReadMinimal] # Nested user data
+    # FIX: Explicitly set default to None for Optional field if it's not being loaded consistently
+    user: Optional[UserReadMinimal] = None 
+
+    class Config:
+        orm_mode = True
 
     class Config:
         orm_mode = True
