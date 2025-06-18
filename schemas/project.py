@@ -33,6 +33,12 @@ class ProjectMemberCreate(BaseModel):
     user_identifier: str  # Single field to receive either user_id or email
     role: str = "member"  
 
+
+class ProjectInvite(BaseModel):
+    project_id: str
+    user_id: str
+
+
 class ProjectRoleUpdate(BaseModel):
     project_id: str
     user_id: str

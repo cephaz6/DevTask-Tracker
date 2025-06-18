@@ -2,20 +2,23 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload, selectinload 
 from db.database import get_session
 from utils.security import get_current_user
+from utils.core import create_notification
 from sqlalchemy import select  
 from typing import Optional
 
 from models.project import ProjectMember, Project
 from models.user import User
-from schemas.project import ProjectMemberCreate,ProjectMemberRemoveRequest, ProjectMemberReadWithUser, ProjectMemberRead, ProjectRoleUpdate
+from schemas.notification import NotificationType
+from models.notification import Notification
+from schemas.project import ProjectMemberCreate,ProjectMemberRemoveRequest, ProjectMemberReadWithUser, ProjectInvite, ProjectMemberRead, ProjectRoleUpdate
 
 router = APIRouter()
 
 
 # Invite a user to a project    `POST /project-members/invite`
-@router.post("/invite", response_model=ProjectMemberRead)
+@router.post("/invite", status_code=status.HTTP_201_CREATED)
 def invite_user_to_project(
-    invite: ProjectMemberCreate, # Expects ProjectMemberCreate with 'user_identifier'
+    invite: ProjectMemberCreate,  # Expects ProjectMemberCreate with 'user_identifier'
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -31,68 +34,66 @@ def invite_user_to_project(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Only the project owner can invite users."
             )
 
-        # 3. Find the invited user by user_identifier (ID or email)
+        # 3. Find the invited user by user_identifier (email or user_id)
         invited_user: Optional[User] = None
-        user_identifier_trimmed = invite.user_identifier.strip()
+        identifier = invite.user_identifier.strip()
 
-        if "@" in user_identifier_trimmed:
-            # If it contains '@', assume it's an email
-            invited_user = session.exec(
-                select(User).where(User.email == user_identifier_trimmed)
-            ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
+        if "@" in identifier:
+            invited_user = session.exec(select(User).where(User.email == identifier)).scalar_one_or_none()
         else:
-            # Otherwise, assume it's a user_id
-            invited_user = session.exec(
-                select(User).where(User.user_id == user_identifier_trimmed)
-            ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
+            invited_user = session.exec(select(User).where(User.user_id == identifier)).scalar_one_or_none()
 
-        # Debugging print (remove in production)
-        print(f"DEBUG: user_identifier_trimmed={user_identifier_trimmed}, invited_user={invited_user}")
-
-        # Ensure the invited user was found
         if not invited_user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invited user not found with the provided identifier.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
-        # At this point, invited_user is guaranteed to be a User object.
-        actual_invited_user_id = invited_user.user_id
+        if invited_user.user_id == current_user.user_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot invite yourself.")
 
-        # 4. Prevent self-invitation
-        if actual_invited_user_id == current_user.user_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot invite yourself to a project."
-            )
-
-        # 5. Prevent duplicate invitations
+        # 4. Check if already a member
         existing_member = session.exec(
             select(ProjectMember).where(
                 ProjectMember.project_id == invite.project_id,
-                ProjectMember.user_id == actual_invited_user_id, # Use the confirmed user ID
+                ProjectMember.user_id == invited_user.user_id
             )
-        ).scalar_one_or_none() # Changed .first() to .scalar_one_or_none()
-        if existing_member:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member of this project."
-            )
+        ).scalar_one_or_none()
 
-        # 6. All checks passed, create the new project member
-        member = ProjectMember(
-            user_id=actual_invited_user_id, # Use the actual user_id from the found User object
-            project_id=invite.project_id,
-            role=invite.role # Use the role specified in the invitation payload
+        if existing_member:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a project member.")
+
+        # 5. Check for existing unread invite notification
+        existing_invite = session.exec(
+            select(Notification).where(
+                Notification.recipient_user_id == invited_user.user_id,
+                Notification.related_project_id == invite.project_id,
+                Notification.type == NotificationType.PROJECT_INVITE,
+                Notification.is_read == False,
+            )
+        ).first()
+
+        if existing_invite:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already been invited to this project.")
+
+        # 6. Send a notification invite
+        message = f"You've been invited to join the project '{project.title}' by {current_user.full_name or current_user.email}."
+        
+
+        create_notification(
+            session=session,
+            recipient_user_id=invited_user.user_id,
+            message=message,
+            notif_type=NotificationType.PROJECT_INVITE,
+            project_id=invite.project_id
         )
-        session.add(member)
-        session.commit()
-        session.refresh(member)
-        return member
+
+        return {"detail": f"Invitation sent to {invited_user.email or invited_user.user_id}"}
 
     except HTTPException as http_e:
         session.rollback()
-        raise http_e # Re-raise FastAPI's HTTPExceptions directly
+        raise http_e
     except Exception as e:
         session.rollback()
-        # Log unexpected errors for debugging
-        print(f"An unexpected error occurred during project member invitation: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected server error occurred: {str(e)}")
+        print(f"Error during project invitation: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected server error occurred.")
 
 
 
@@ -253,3 +254,83 @@ def remove_project_member(
         # Log the unexpected error for debugging on the server side
         print(f"An unexpected error occurred during project member removal: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected server error occurred: {str(e)}")
+    
+
+# Accetpt a Project Membership Invitation
+@router.post("/accept-invite", response_model=ProjectMemberRead)
+def accept_project_invite(
+    invite_data: ProjectInvite,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    # Ensure the user_id in the request matches the authenticated user
+    if invite_data.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to accept this invite.")
+
+    # 1. Check if the notification exists for this user and project
+    notif = session.exec(
+        select(Notification).where(
+            Notification.recipient_user_id == current_user.user_id,
+            Notification.related_project_id == invite_data.project_id,
+            Notification.type == NotificationType.PROJECT_INVITE,
+            Notification.is_read == False
+        )
+    ).first()
+    
+    if not notif:
+        raise HTTPException(status_code=404, detail="No pending project invite found.")
+
+    # 2. Check if already a member
+    existing = session.exec(
+        select(ProjectMember).where(
+            ProjectMember.project_id == invite_data.project_id,
+            ProjectMember.user_id == current_user.user_id
+        )
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Already a project member.")
+
+    # 3. Add to project
+    member = ProjectMember(
+        project_id=invite_data.project_id,
+        user_id=current_user.user_id,
+        role="member"  # default role
+    )
+    session.add(member)
+
+    # 4. Mark notification as read
+    notif.is_read = True
+
+    session.commit()
+    session.refresh(member)
+    return member
+
+# Decline Project memebership invitation
+@router.post("/decline-invite")
+def decline_project_invite(
+    invite_data: ProjectInvite,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    # Ensure the user_id in the request matches the authenticated user
+    if invite_data.user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to decline this invite.")
+
+    # 1. Locate the notification
+    notif = session.exec(
+        select(Notification).where(
+            Notification.recipient_user_id == current_user.user_id,
+            Notification.related_project_id == invite_data.project_id,
+            Notification.type == NotificationType.PROJECT_INVITE,
+            Notification.is_read == False
+        )
+    ).first()
+
+    if not notif:
+        raise HTTPException(status_code=404, detail="No pending invite found.")
+
+    # 2. Mark it as read (declined)
+    notif.is_read = True
+
+    session.commit()
+    return {"detail": "Project invitation declined successfully."}

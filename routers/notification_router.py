@@ -3,10 +3,14 @@ from typing import List, Optional
 from sqlmodel import Session, select
 
 from models.notification import Notification
-from schemas.notification import NotificationCreate, NotificationRead
+from schemas.notification import NotificationCreate, NotificationRead, NotificationType
+
 from db.database import get_session
 from models.user import User
 from utils.security import get_current_user
+from models.project import ProjectMember
+from schemas.project import  ProjectMemberRead
+
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -107,7 +111,7 @@ def mark_notification_as_read(
                 status_code=403, detail="Not authorized to modify this notification"
             )
 
-        notification.read = True
+        notification.is_read = True
         session.add(notification)
         session.commit()
         session.refresh(notification)
@@ -116,3 +120,5 @@ def mark_notification_as_read(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
