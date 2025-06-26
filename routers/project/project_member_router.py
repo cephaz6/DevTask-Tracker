@@ -299,7 +299,7 @@ def accept_project_invite(
     session.add(member)
 
     # 4. Mark notification as read
-    notif.is_read = True
+    # notif.is_read = True
 
     session.commit()
     session.refresh(member)
@@ -334,3 +334,20 @@ def decline_project_invite(
 
     session.commit()
     return {"detail": "Project invitation declined successfully."}
+
+
+# Check if a member already exist 
+@router.get("/check")
+def check_user_project_membership(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    is_member = session.exec(
+        select(ProjectMember).where(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == current_user.user_id
+        )
+    ).first() is not None
+
+    return {"is_member": is_member}

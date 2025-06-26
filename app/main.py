@@ -13,6 +13,7 @@ from routers.comment_router import router as comment_router
 from routers.notification_router import router as notification_router
 from routers.dashboard.dashboard_router import router as dashboard_router
 from routers.websocket import ws_comments # Import WebSocket handlers
+from routers.copilot.copilot_router import router as copilot_router
 
 # Utilities
 from utils.scheduler import scheduler
@@ -59,3 +60,4 @@ app.include_router(comment_router)
 app.include_router(notification_router)
 app.include_router(dashboard_router)
 app.include_router(ws_comments.router)
+app.include_router(copilot_router)
