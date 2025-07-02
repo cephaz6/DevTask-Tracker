@@ -1,32 +1,39 @@
-# services/llm.py
-
 from datetime import date
 from openai import OpenAI
-from typing import List
-from schemas.copilot import TaskRequestInput, TaskResponseItem, GeneratedProject
+from schemas.copilot import TaskRequestInput, GeneratedProject
 import json
 import os
 
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def build_prompt(data: TaskRequestInput) -> str:
+    today = date.today().isoformat()
+
     return f"""
 You are a project planning assistant.
 
+Today's date is {today}.
 The user wants to create a learning project titled "{data.title}".
 They are a {data.level} learner and prefer a {data.tone} tone.
 They can commit {data.hours_per_day} hours per day.
-They want the project to start on {data.start_date}.
-{'Include' if data.include_weekends else 'Exclude'} weekends when scheduling.
+The project should start on {data.start_date}.
+{"Include" if data.include_weekends else "Exclude"} weekends when scheduling.
 
-Please:
-- Generate a series of learning tasks spread across days
-- Return exactly one task per active day
-- Use realistic task titles and short descriptions
-- Include estimated_time (≤ hours/day), priority ("low", "medium", "high"), and due_date
-- Format output as valid JSON (no comments, no code blocks)
+Your job:
+- Generate a list of tasks spread across active days starting from the project start date
+- Only one task per active day
+- Use clear, realistic task titles and short descriptions
+- Assign each task:
+  - estimated_time (≤ {data.hours_per_day} hours),
+  - priority ("low", "medium", "high"),
+  - due_date starting from {data.start_date} and not before {today}
+- Ensure due_dates are realistic and spaced according to the active days
 
-Return a JSON like:
+⚠️ Rules:
+- Do NOT return any dates before {today}
+- Output valid JSON only (no markdown, no comments)
+
+Respond in this exact JSON format:
 {{
   "title": "...",
   "description": "...",
