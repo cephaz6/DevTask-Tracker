@@ -62,7 +62,7 @@ def save_generated_project(
     return {"message": "Project and tasks saved successfully", "project_id": project.id}
 
 
-
+# Generate tasks from prompt
 @router.post("/generate-tasks", response_model=GeneratedProject)
 def generate_tasks_from_prompt(
     data: PromptRequest
