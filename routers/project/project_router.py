@@ -167,7 +167,7 @@ def get_project_by_id(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Update a project    `PUT /projects/{project_id}`
+# Delete a project    `DELETE /project/{project_id}`
 @router.delete("/{project_id}")
 def delete_project(
     project_id: str,
