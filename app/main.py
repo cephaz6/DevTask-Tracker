@@ -22,29 +22,42 @@ from utils.scheduler import scheduler
 from dotenv import load_dotenv
 load_dotenv()
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Handles startup and shutdown events for the FastAPI application.
     This is where we'll run database migrations.
     """
+    yield
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
-# Optional: CORS (your existing logic)
+# CORS Configuration - Fixed origins
 origins = [
     "http://localhost:5173",  # frontend origin local
-    "https://devtask-client.vercel.app/",  # frontend origin web
+    "http://localhost:3000",  # alternative local port
+    "https://devtask-client.vercel.app",  # REMOVED trailing slash
+    "https://*.vercel.app",  # Allow all Vercel preview deployments
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Or ["*"] for testing
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Root endpoint (your existing logic)
