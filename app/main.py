@@ -35,7 +35,8 @@ app = FastAPI()
 
 # Optional: CORS (your existing logic)
 origins = [
-    "http://localhost:5173",  # frontend origin
+    "http://localhost:5173",  # frontend origin local
+    "https://devtask-client.vercel.app/",  # frontend origin web
 ]
 
 app.add_middleware(
