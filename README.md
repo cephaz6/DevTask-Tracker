@@ -1,9 +1,7 @@
 # DevTask Tracker 🛠️
 
 DevTask Tracker is a simple task management backend built using **FastAPI** and
-**SQLModel**. It's designed as part of a personal learning journey ("60 Days of
-Coding") to improve backend development skills, project structure, and
-understanding of modern Python frameworks.
+**SQLModel**. 
 
 This project will gradually evolve from a basic FastAPI app to a full-featured
 task tracking API with database support, validation, authentication, and more.
