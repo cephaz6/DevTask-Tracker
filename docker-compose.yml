@@ -1,0 +1,28 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://devuser:devpass@db:5432/devtask
+
+  db:
+    image: postgres:16
+    networks:
+      - backend
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=devpass
+      - POSTGRES_DB=devtask
+
+networks:
+  backend:
+
+volumes:
+  pgdata:
