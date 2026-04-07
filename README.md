@@ -8,16 +8,16 @@ task tracking API with database support, validation, authentication, and more.
 
 ---
 
-## 🚀 Project Goals
+## Details
 
-- ✅ Day 1: Initialize project repo, setup FastAPI backend, and define data
+- Initialize project repo, setup FastAPI backend, and define data
   models using SQLModel/Pydantic
-- 🔜 Day 2+: Add SQLite database, implement task creation and listing
-- 🔜 API documentation and testing
-- 🔜 Add filtering, search, and status updates
-- 🔜 Implement user authentication (JWT or OAuth)
-- 🔜 Frontend integration (maybe with React)
-- 🔜 Deployment
+- SQLite database, implement task creation and listing
+- API documentation and testing
+- filtering, search, and status updates
+- user authentication (JWT)
+- Frontend integration (React)
+- Deployment
 
 ---
 
