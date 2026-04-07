@@ -3,9 +3,6 @@
 DevTask Tracker is a simple task management backend built using **FastAPI** and
 **SQLModel**. 
 
-This project will gradually evolve from a basic FastAPI app to a full-featured
-task tracking API with database support, validation, authentication, and more.
-
 ---
 
 ## Details
