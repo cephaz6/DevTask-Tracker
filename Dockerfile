@@ -1,24 +1,28 @@
-# Use the official Python image
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements
 COPY requirements.txt .
 
-# Install dependencies
-RUN pip install -r requirements.txt
+RUN pip install --user --no-cache-dir -r requirements.txt
 
+FROM python:3.11-slim
 
-# Copy the project files
+WORKDIR /app
+
+RUN useradd --create-home appuser
+
+COPY --from=builder /root/.local /home/appuser/.local
+
 COPY . .
 
-# Set environment variables
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
+ENV PATH="/home/appuser/.local/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-# Expose the port FastAPI runs on
 EXPOSE 8000
 
-# Start the FastAPI app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

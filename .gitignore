@@ -3,6 +3,7 @@ venv
 .venv
 env
 .env
+.git
 ENV/
 __pycache__/
 *.pyc

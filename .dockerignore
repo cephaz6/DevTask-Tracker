@@ -1,11 +1,8 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
 .git
+__pycache__
+*.pyc
+*.db
 .env
-.dockerignore
-Dockerfile
-venv/
-ROADMAP.md
+postman
+alembic/versions/__pycache__
+devtask.db
