@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: devtask-client:v1
+          image: devtask-client:v3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
