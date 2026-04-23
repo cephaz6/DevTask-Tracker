@@ -60,6 +60,11 @@ app.add_middleware(
     max_age=3600,  # Cache preflight requests for 1 hour
 )
 
+# Health check endpoint
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Root endpoint (your existing logic)
 @app.get("/")
 def root():
