@@ -1,5 +1,4 @@
 # main.py
-import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,8 +14,6 @@ from routers.dashboard.dashboard_router import router as dashboard_router
 from routers.websocket import ws_comments # Import WebSocket handlers
 from routers.copilot.copilot_router import router as copilot_router
 
-# Utilities
-from utils.scheduler import scheduler
 
 # Load environment variables (already present, good!)
 from dotenv import load_dotenv
@@ -65,16 +62,20 @@ app.add_middleware(
 def health():
     return {"status": "ok"}
 
+
 # Root endpoint (your existing logic)
 @app.get("/")
 def root():
     return {"message": "Welcome to DevTask Tracker"}
+
 
 # Include the routers (your existing logic)
 app.include_router(auth.router)
 app.include_router(tag_router.router)
 app.include_router(task_router)
 app.include_router(project_router)
+
+
 app.include_router(comment_router)
 app.include_router(notification_router)
 app.include_router(dashboard_router)

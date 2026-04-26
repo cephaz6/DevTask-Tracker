@@ -1,6 +1,6 @@
 import json
 
-from typing import List, Optional
+from typing import List
 from sqlmodel import select
 from models.task import Task
 from models.user import User
@@ -53,6 +53,7 @@ async def add_comment(
         session.commit()
         session.refresh(new_comment)
 
+
         # Send real-time WebSocket message
         payload = {
             "type": "reply" if new_comment.parent_comment_id else "comment",
@@ -92,7 +93,6 @@ async def add_comment(
                     notif_type=NotificationType.COMMENT,
                     task_id=comment.task_id,
                 )
-       
         return new_comment
 
     except Exception as e:

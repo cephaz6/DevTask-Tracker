@@ -35,4 +35,5 @@ class TaskComment(SQLModel, table=True):
     replies: List["TaskComment"] = Relationship(back_populates="parent_comment")
 
     def __repr__(self):
-        return f"<TaskComment(id={self.id}, task_id='{self.task_id}', user_id='{self.user_id}', content='{self.content[:20]}...')>"
+        return (f"<TaskComment(id={self.id}, task_id='{self.task_id}', "
+                f"user_id='{self.user_id}', content='{self.content[:20]}...')>")
