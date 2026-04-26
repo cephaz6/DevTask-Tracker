@@ -13,7 +13,7 @@ from models.comment import TaskComment
 from models.project import Project
 from utils.core import create_notification
 from schemas.notification import NotificationType
-from routers.websocket.ws_comments import active_connections # Assuming this import path is correct
+from routers.websocket.ws_comments import active_connections  # Assuming this import path is correct
 
 # Import selectinload for eager loading relationships
 from sqlalchemy.orm import selectinload
@@ -52,7 +52,6 @@ async def add_comment(
         session.add(new_comment)
         session.commit()
         session.refresh(new_comment)
-
 
         # Send real-time WebSocket message
         payload = {
@@ -108,7 +107,7 @@ def get_comments_for_task(task_id: str, session: Session = Depends(get_session))
         comments = session.exec(
             select(TaskComment)
             .where(TaskComment.task_id == task_id)
-            .options(selectinload(TaskComment.user)) # This is the essential line!
+            .options(selectinload(TaskComment.user))  # This is the essential line!
         ).all()
         return comments
     except Exception as e:
@@ -122,7 +121,7 @@ def get_comment_by_id(comment_id: str, session: Session = Depends(get_session)):
         comment = session.exec(
             select(TaskComment)
             .where(TaskComment.id == comment_id)
-            .options(selectinload(TaskComment.user)) # Also add selectinload here
+            .options(selectinload(TaskComment.user))  # Also add selectinload here
         ).first()
 
         if not comment:
@@ -157,7 +156,7 @@ def delete_comment(
 
         # Authorization check: Only comment author, task owner, or project owner can delete
         is_author = comment.user_id == current_user.user_id
-        is_task_owner = task.user_id == current_user.user_id # Assuming task.user_id is the owner ID
+        is_task_owner = task.user_id == current_user.user_id  # Assuming task.user_id is the owner ID
         is_project_owner = project_owner_id == current_user.user_id
 
         if not (is_author or is_task_owner or is_project_owner):

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from uuid import uuid4
-from models.project import Project, ProjectMember 
+from models.project import Project, ProjectMember
 from models.task import Task, TaskAssignment
 from schemas.copilot import AIGeneratedProject, PromptRequest, GeneratedProject
 from utils.security import get_session, get_current_user
@@ -11,11 +11,12 @@ from utils.llm import call_gpt_from_user_prompt
 
 router = APIRouter(prefix="/copilot", tags=["CoPilot"])
 
+
 @router.post("/save-generated-project")
 def save_generated_project(
     data: AIGeneratedProject,
     session: Session = Depends(get_session),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user)
 ):
     # 1. Create project
     project = Project(

@@ -1,4 +1,3 @@
-# main.py
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,13 +10,13 @@ from routers.project.routes import router as project_router
 from routers.comment_router import router as comment_router
 from routers.notification_router import router as notification_router
 from routers.dashboard.dashboard_router import router as dashboard_router
-from routers.websocket import ws_comments # Import WebSocket handlers
+from routers.websocket import ws_comments  # Import WebSocket handlers
 from routers.copilot.copilot_router import router as copilot_router
-
 
 # Load environment variables (already present, good!)
 from dotenv import load_dotenv
 load_dotenv()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +25,7 @@ async def lifespan(app: FastAPI):
     This is where we'll run database migrations.
     """
     yield
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -56,6 +56,7 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,  # Cache preflight requests for 1 hour
 )
+
 
 # Health check endpoint
 @app.get("/health")

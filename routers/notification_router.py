@@ -3,13 +3,11 @@ from typing import List, Optional
 from sqlmodel import Session, select
 
 from models.notification import Notification
-from schemas.notification import NotificationCreate, NotificationRead, NotificationType
+from schemas.notification import NotificationCreate, NotificationRead
 
 from db.database import get_session
 from models.user import User
 from utils.security import get_current_user
-from models.project import ProjectMember
-from schemas.project import  ProjectMemberRead
 
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -52,8 +50,6 @@ def get_notifications(
         query = select(Notification).where(
             Notification.recipient_user_id == current_user.user_id
         )
-        # if unread is True:
-        #     query = query.where(Notification.read == False)
         if unread is not None:
             query = query.where(Notification.is_read == (not unread))
 
@@ -120,5 +116,3 @@ def mark_notification_as_read(
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
-
