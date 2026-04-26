@@ -35,5 +35,5 @@ DevTask Tracker is a simple task management backend built using **FastAPI** and
 
 ```bash
 git clone https://github.com/cephaz6/DevTask-Tracker.git
-cd devtask-tracker
+cd app
 ```
