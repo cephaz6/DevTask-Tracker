@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from utils.security import get_current_user
 from db.database import get_session
 from sqlmodel import select, func, or_
@@ -211,9 +211,11 @@ def get_dashboard_stats(
         # Get tasks created by the user (Task.user_id is the creator/owner)
         tasks_created_by_user_query = select(Task.id).where(Task.user_id == current_user.user_id)
         tasks_created_by_user_ids = session.exec(tasks_created_by_user_query).all()
-        
+
         # Get tasks where the user is an assignee
-        tasks_assigned_to_user_query = select(TaskAssignment.task_id).where(TaskAssignment.user_id == current_user.user_id)
+        tasks_assigned_to_user_query = select(TaskAssignment.task_id).where(
+            TaskAssignment.user_id == current_user.user_id
+        )
         tasks_assigned_to_user_ids = session.exec(tasks_assigned_to_user_query).all()
 
         # Combine unique task IDs from both created and assigned tasks
@@ -232,22 +234,24 @@ def get_dashboard_stats(
 
         # --- Pending Assignments (tasks assigned to current user, not completed/cancelled) ---
         pending_assignments_count = sum(
-            1 for task in all_relevant_tasks if task.id in tasks_assigned_to_user_ids and task.status not in ["completed", "cancelled"]
+            1 for task in all_relevant_tasks
+            if task.id in tasks_assigned_to_user_ids
+            and task.status not in ["completed", "cancelled"]
         )
-        
+
         # --- Active Projects (projects where the current user is a member or owner) ---
-        # Find project IDs where the user is an owner or member
-        active_project_ids_query = select(ProjectMember.project_id).where(ProjectMember.user_id == current_user.user_id).distinct()
+        active_project_ids_query = select(ProjectMember.project_id).where(
+            ProjectMember.user_id == current_user.user_id
+        ).distinct()
         active_projects_count = session.exec(active_project_ids_query).scalar_one_or_none() or 0
 
         # --- Recent Comments Count ---
         # Count comments on tasks the user is involved in (owner or assignee)
         recent_comments_count_query = select(func.count(TaskComment.id)).where(
             TaskComment.task_id.in_(all_relevant_task_ids),
-            TaskComment.created_at >= datetime.utcnow() - timedelta(days=7) # Comments in last 7 days
+            TaskComment.created_at >= datetime.utcnow() - timedelta(days=7)  # Comments in last 7 days
         )
         recent_comments_count = session.exec(recent_comments_count_query).scalar_one_or_none() or 0
-
 
         return DashboardStatsRead(
             total_tasks=total_tasks_count,
@@ -277,12 +281,11 @@ def get_recent_activities(
     Activities include new tasks, task status changes (e.g., completed), comments, and assignments.
     """
     activities = []
-    
+
     # Define a time threshold for "recent" (e.g., last 30 days)
     time_threshold = datetime.utcnow() - timedelta(days=30)
 
     # 1. Get relevant tasks (created by user or assigned to user)
-    # This helps filter activities to only what the current user is involved with
     relevant_task_ids_query = select(Task.id).where(
         or_(
             Task.user_id == current_user.user_id,
@@ -291,12 +294,11 @@ def get_recent_activities(
     ).distinct()
     relevant_task_ids = session.exec(relevant_task_ids_query).all()
 
-
     # 2. Fetch Recent Tasks (created or status changed)
     # Tasks created by user
     recent_created_tasks = session.exec(
         select(Task, User)
-        .join(User, Task.user_id == User.user_id) # Join to get creator's name
+        .join(User, Task.user_id == User.user_id)  # Join to get creator's name
         .where(
             Task.user_id == current_user.user_id,
             Task.created_at >= time_threshold
@@ -318,13 +320,15 @@ def get_recent_activities(
     # Tasks completed by user (or where user is owner and task is completed)
     recent_completed_tasks = session.exec(
         select(Task, User)
-        .join(User, Task.user_id == User.user_id) # Join to get owner's name
+        .join(User, Task.user_id == User.user_id)  # Join to get owner's name
         .where(
             Task.status == "completed",
-            Task.updated_at >= time_threshold, # Check updated_at for status changes
+            Task.updated_at >= time_threshold,  # Check updated_at for status changes
             or_(
-                Task.user_id == current_user.user_id, # User owns the task
-                Task.id.in_(select(TaskAssignment.task_id).where(TaskAssignment.user_id == current_user.user_id)) # User is assigned to task
+                Task.user_id == current_user.user_id,  # User owns the task
+                Task.id.in_(  # User is assigned to task
+                    select(TaskAssignment.task_id).where(TaskAssignment.user_id == current_user.user_id)
+                )
             )
         )
         .order_by(Task.updated_at.desc())
@@ -341,14 +345,13 @@ def get_recent_activities(
             related_entity_id=task.id
         ))
 
-
     # 3. Fetch Recent Comments (on relevant tasks)
     recent_comments = session.exec(
         select(TaskComment, User, Task)
-        .join(User, TaskComment.user_id == User.user_id) # Commenter
-        .join(Task, TaskComment.task_id == Task.id)     # Related task
+        .join(User, TaskComment.user_id == User.user_id)  # Commenter
+        .join(Task, TaskComment.task_id == Task.id)  # Related task
         .where(
-            TaskComment.task_id.in_(relevant_task_ids), # Only comments on user's relevant tasks
+            TaskComment.task_id.in_(relevant_task_ids),  # Only comments on user's relevant tasks
             TaskComment.created_at >= time_threshold
         )
         .order_by(TaskComment.created_at.desc())
@@ -358,7 +361,7 @@ def get_recent_activities(
         activities.append(RecentActivityItemRead(
             id=comment.id,
             type="comment_added",
-            description=f"'{comment.content[:50]}...' added to task '{task_obj.title}'.", # Truncate comment
+            description=f"'{comment.content[:50]}...' added to task '{task_obj.title}'.",  # Truncate comment
             timestamp=comment.created_at,
             actor_name=actor_user.full_name or actor_user.email.split('@')[0],
             related_entity_title=task_obj.title,
@@ -368,11 +371,11 @@ def get_recent_activities(
     # 4. Fetch Recent Assignments (where current user is the assignee)
     recent_assignments = session.exec(
         select(TaskAssignment, User, Task)
-        .join(User, TaskAssignment.user_id == User.user_id) # The assignee
-        .join(Task, TaskAssignment.task_id == Task.id)     # The task assigned
+        .join(User, TaskAssignment.user_id == User.user_id)  # The assignee
+        .join(Task, TaskAssignment.task_id == Task.id)  # The task assigned
         .where(
             TaskAssignment.user_id == current_user.user_id,
-            TaskAssignment.created_at >= time_threshold # Assuming TaskAssignment has a created_at
+            TaskAssignment.created_at >= time_threshold  # Assuming TaskAssignment has a created_at
         )
         .order_by(TaskAssignment.created_at.desc())
         .limit(limit)
@@ -383,11 +386,10 @@ def get_recent_activities(
             type="assignment_created",
             description=f"You were assigned to task '{task_obj.title}'.",
             timestamp=assignment.created_at,
-            actor_name=assignee_user.full_name or assignee_user.email.split('@')[0], # This will be current_user
+            actor_name=assignee_user.full_name or assignee_user.email.split('@')[0],
             related_entity_title=task_obj.title,
             related_entity_id=task_obj.id
         ))
-
 
     # Sort all activities by timestamp in descending order and limit
     sorted_activities = sorted(activities, key=lambda x: x.timestamp, reverse=True)[:limit]
