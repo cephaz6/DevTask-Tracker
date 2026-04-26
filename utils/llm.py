@@ -106,7 +106,7 @@ Respond in this format:
         temperature=0.7,
         messages=[
             {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt},
         ]
     )
 
@@ -116,4 +116,6 @@ Respond in this format:
         parsed = json.loads(content)
         return GeneratedProject(**parsed)
     except Exception as e:
-        raise ValueError(f"GPT response could not be parsed: {e}\nRaw output:\n{content}")
+        raise ValueError(
+            f"GPT response could not be parsed: {e}\nRaw output:\n{content}"
+        )

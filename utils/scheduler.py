@@ -14,7 +14,7 @@ def check_due_dates():
             now = datetime.now()
             tomorrow = now + timedelta(days=1)
 
-            tasks = session.exec(select(Task).where(Task.due_date != None)).all()
+            tasks = session.exec(select(Task).where(Task.due_date is not None)).all()
 
             for task in tasks:
                 if not task.due_date:
@@ -40,7 +40,7 @@ def check_due_dates():
                     else:
                         continue
 
-                    # TODO: Optional check - prevent duplicate notifications (e.g., via a unique constraint or last sent time)
+                    # TODO: prevent duplicate notifications (e.g., via a unique constraint or last sent time)
 
                     create_notification(
                         session=session,
