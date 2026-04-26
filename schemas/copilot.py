@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List, Literal, Optional
 from datetime import datetime, date
 
+
 class AIGeneratedTask(BaseModel):
     title: str
     description: Optional[str]
@@ -11,10 +12,12 @@ class AIGeneratedTask(BaseModel):
     estimated_time: float
     due_date: datetime
 
+
 class AIGeneratedProject(BaseModel):
     title: str
     description: Optional[str]
     tasks: List[AIGeneratedTask]
+
 
 class TaskRequestInput(BaseModel):
     title: str
@@ -24,6 +27,7 @@ class TaskRequestInput(BaseModel):
     include_weekends: bool
     start_date: date
 
+
 class TaskResponseItem(BaseModel):
     title: str
     description: str
@@ -31,10 +35,12 @@ class TaskResponseItem(BaseModel):
     estimated_time: float
     due_date: date
 
+
 class GeneratedProject(BaseModel):
     title: str
     description: str
     tasks: List[TaskResponseItem]
+
 
 class PromptRequest(BaseModel):
     prompt: str

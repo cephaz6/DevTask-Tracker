@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel
 from datetime import datetime
 from .task import TaskRead
 from .user import UserReadMinimal
@@ -24,14 +24,16 @@ class ProjectMemberRead(BaseModel):
     class Config:
         orm_mode = True
 
+
 class ProjectMemberRemoveRequest(BaseModel):
     project_id: str
     user_id: str
 
+
 class ProjectMemberCreate(BaseModel):
     project_id: str
     user_identifier: str  # Single field to receive either user_id or email
-    role: str = "member"  
+    role: str = "member"
 
 
 class ProjectInvite(BaseModel):
@@ -45,35 +47,26 @@ class ProjectRoleUpdate(BaseModel):
     role: str
 
 
-class ProjectMemberReadWithUser(ProjectMemberRead):
-    full_name: str | None
-    email: str | None
-    # Add other user fields if needed
-
-
-
 class ProjectMemberReadWithUser(BaseModel):
     id: str
     user_id: str
     project_id: str
     role: str
-    # FIX: Explicitly set default to None for Optional field if it's not being loaded consistently
-    user: Optional[UserReadMinimal] = None 
+    user: Optional[UserReadMinimal] = None
 
     class Config:
         orm_mode = True
 
-    class Config:
-        orm_mode = True
 
 class TaskReadMinimal(BaseModel):
     id: str
     title: str
-    status: str # Only include fields you want to expose
+    status: str  # Only include fields you want to expose
     priority: str
 
     class Config:
         orm_mode = True
+
 
 class ProjectRead(BaseModel):
     id: str
@@ -81,11 +74,9 @@ class ProjectRead(BaseModel):
     description: Optional[str] = None
     owner_id: str
     created_at: datetime
-    
-    # owner: Optional[UserReadMinimal] # If you want to expose owner details directly
 
-    members: List[ProjectMemberReadWithUser] = [] # List of project members with user details
-    tasks: List[TaskRead] = [] # List of associated tasks
+    members: List[ProjectMemberReadWithUser] = []  # List of project members with user details
+    tasks: List[TaskRead] = []  # List of associated tasks
 
     class Config:
         orm_mode = True

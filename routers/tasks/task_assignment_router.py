@@ -43,7 +43,7 @@ def _authorize_task_modification(task: Task, current_user: User, session: Sessio
     )
 
 
-#Assign Users to this task
+# Assign Users to this task
 @router.put("/{task_id}/assignments", response_model=Task)
 def update_task_assignments(
     task_id: str,
@@ -63,7 +63,7 @@ def update_task_assignments(
         existing_assignments = session.exec(
             select(TaskAssignment).where(
                 TaskAssignment.task_id == task_id,
-                TaskAssignment.is_watcher == False,
+                TaskAssignment.is_watcher is False,
             )
         ).all()
 
@@ -79,7 +79,7 @@ def update_task_assignments(
             delete(TaskAssignment).where(
                 TaskAssignment.task_id == task_id,
                 TaskAssignment.user_id.in_(to_remove),
-                TaskAssignment.is_watcher == False
+                TaskAssignment.is_watcher is False
             )
         )
 
@@ -224,7 +224,7 @@ def add_watcher_to_task(
             select(TaskAssignment).where(
                 TaskAssignment.task_id == payload.task_id,
                 TaskAssignment.user_id == payload.user_id,
-                TaskAssignment.is_watcher == True,
+                TaskAssignment.is_watcher is True,
             )
         ).first()
         if existing:

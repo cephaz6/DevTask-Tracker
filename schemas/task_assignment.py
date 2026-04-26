@@ -2,7 +2,8 @@
 
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List 
+from typing import List
+
 
 class TaskAssignmentBase(BaseModel):
     task_id: str
@@ -29,4 +30,4 @@ class TaskAssignmentRead(TaskAssignmentBase):
 
 class TaskAssignmentUpdatePayload(BaseModel):
     """Schema for updating task assignments."""
-    user_ids: List[str] 
+    user_ids: List[str]

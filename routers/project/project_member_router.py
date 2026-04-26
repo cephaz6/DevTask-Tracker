@@ -1,16 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload, selectinload 
+from sqlalchemy.orm import Session, selectinload
 from db.database import get_session
 from utils.security import get_current_user
 from utils.core import create_notification
-from sqlalchemy import select  
+from sqlalchemy import select
 from typing import Optional
 
 from models.project import ProjectMember, Project
 from models.user import User
 from schemas.notification import NotificationType
 from models.notification import Notification
-from schemas.project import ProjectMemberCreate,ProjectMemberRemoveRequest, ProjectMemberReadWithUser, ProjectInvite, ProjectMemberRead, ProjectRoleUpdate
+from schemas.project import (
+    ProjectMemberCreate, ProjectMemberRemoveRequest, ProjectMemberReadWithUser,
+    ProjectInvite, ProjectMemberRead, ProjectRoleUpdate
+)
 
 router = APIRouter()
 
@@ -66,16 +69,18 @@ def invite_user_to_project(
                 Notification.recipient_user_id == invited_user.user_id,
                 Notification.related_project_id == invite.project_id,
                 Notification.type == NotificationType.PROJECT_INVITE,
-                Notification.is_read == False,
+                Notification.is_read is False,
             )
         ).first()
 
         if existing_invite:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User has already been invited to this project.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User has already been invited to this project."
+            )
 
         # 6. Send a notification invite
         message = f"You've been invited to join the project '{project.title}' by {current_user.full_name or current_user.email}."
-        
 
         create_notification(
             session=session,
@@ -96,13 +101,12 @@ def invite_user_to_project(
         raise HTTPException(status_code=500, detail="An unexpected server error occurred.")
 
 
-
 # List all members of a project    `GET /project-members/{project_id}/members`
 # Then in your endpoint:
 @router.get("/{project_id}/members", response_model=list[ProjectMemberReadWithUser])
 def list_project_members(
     project_id: str,
-    session: Session = Depends(get_session), # Assuming get_session is your DB session dependency
+    session: Session = Depends(get_session),  # Assuming get_session is your DB session dependency
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -130,7 +134,7 @@ def list_project_members(
         # Using selectinload for efficient loading of relationships in a list.
         members = session.exec(
             select(ProjectMember)
-            .options(selectinload(ProjectMember.user)) # Only selectinload here
+            .options(selectinload(ProjectMember.user))  # Only selectinload here
             .where(ProjectMember.project_id == project_id)
         ).scalars().all()
 
@@ -148,7 +152,6 @@ def list_project_members(
             status_code=500,
             detail="An internal server error occurred while fetching project members."
         )
-
 
 
 # Update a member's role in a project    `PATCH /project-members/role`
@@ -188,7 +191,7 @@ def update_member_role(
 # Remove a member from a project    `DELETE /project-members/remove`
 @router.delete("/remove")
 def remove_project_member(
-    payload: ProjectMemberRemoveRequest, # Use the new, specific schema for removal
+    payload: ProjectMemberRemoveRequest,  # Use the new, specific schema for removal
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
@@ -203,14 +206,9 @@ def remove_project_member(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Only the project owner can remove members."
             )
-        
+
         # 3. Prevent owner from removing themselves if they are the ONLY owner
-        # This is a critical edge case to prevent projects from becoming ownerless.
-        # If the project can have multiple owners, you might allow owners to remove each other
-        # as long as at least one owner remains. For simplicity, this assumes a single owner.
         if payload.user_id == project.owner_id and current_user.user_id == project.owner_id:
-            # Check if there's at least one other owner before allowing owner to remove themselves
-            # This logic depends on your 'role' management. Assuming 'owner' is a distinct role.
             all_members_in_project = session.exec(
                 select(ProjectMember).where(ProjectMember.project_id == project.id)
             ).all()
@@ -220,13 +218,12 @@ def remove_project_member(
                 if member.role == "owner" and member.user_id != payload.user_id:
                     other_owners_exist = True
                     break
-            
+
             if not other_owners_exist and payload.user_id == project.owner_id:
-                 raise HTTPException(
+                raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Cannot remove the sole project owner without assigning another owner first."
                 )
-
 
         # 4. Find the specific project member to remove using new query syntax
         member_to_remove = session.exec(
@@ -234,29 +231,34 @@ def remove_project_member(
                 ProjectMember.project_id == payload.project_id,
                 ProjectMember.user_id == payload.user_id,
             )
-        ).scalar_one_or_none() # Use scalar_one_or_none for single result
+        ).scalar_one_or_none()  # Use scalar_one_or_none for single result
 
         if not member_to_remove:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User is not a member of this project or member not found.")
-        
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User is not a member of this project or member not found."
+            )
+
         # 5. Perform the deletion
         session.delete(member_to_remove)
         session.commit()
-        
+
         # 6. Return a success message (FastAPI will serialize it to JSON)
         return {"message": "Member removed successfully."}
 
     except HTTPException as http_e:
         session.rollback()
-        raise http_e # Re-raise FastAPI's HTTPExceptions directly
+        raise http_e  # Re-raise FastAPI's HTTPExceptions directly
     except Exception as e:
         session.rollback()
-        # Log the unexpected error for debugging on the server side
         print(f"An unexpected error occurred during project member removal: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected server error occurred: {str(e)}")
-    
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected server error occurred: {str(e)}"
+        )
 
-# Accetpt a Project Membership Invitation
+
+# Accept a Project Membership Invitation
 @router.post("/accept-invite", response_model=ProjectMemberRead)
 def accept_project_invite(
     invite_data: ProjectInvite,
@@ -273,10 +275,10 @@ def accept_project_invite(
             Notification.recipient_user_id == current_user.user_id,
             Notification.related_project_id == invite_data.project_id,
             Notification.type == NotificationType.PROJECT_INVITE,
-            Notification.is_read == False
+            Notification.is_read is False
         )
     ).first()
-    
+
     if not notif:
         raise HTTPException(status_code=404, detail="No pending project invite found.")
 
@@ -298,14 +300,12 @@ def accept_project_invite(
     )
     session.add(member)
 
-    # 4. Mark notification as read
-    # notif.is_read = True
-
     session.commit()
     session.refresh(member)
     return member
 
-# Decline Project memebership invitation
+
+# Decline Project membership invitation
 @router.post("/decline-invite")
 def decline_project_invite(
     invite_data: ProjectInvite,
@@ -322,7 +322,7 @@ def decline_project_invite(
             Notification.recipient_user_id == current_user.user_id,
             Notification.related_project_id == invite_data.project_id,
             Notification.type == NotificationType.PROJECT_INVITE,
-            Notification.is_read == False
+            Notification.is_read is False
         )
     ).first()
 
@@ -336,7 +336,7 @@ def decline_project_invite(
     return {"detail": "Project invitation declined successfully."}
 
 
-# Check if a member already exist 
+# Check if a member already exists
 @router.get("/check")
 def check_user_project_membership(
     project_id: str,

@@ -1,14 +1,13 @@
 # In your server's schemas/task.py
 
 from typing import Optional, List
-from pydantic import BaseModel, Field, model_validator # Import model_validator
+from pydantic import BaseModel, Field, model_validator  # Import model_validator
 from datetime import datetime
 from schemas.tag import TagReadNested
 from enum import Enum
 from schemas.comment import TaskCommentSummary
 from schemas.user import UserReadMinimal
 from schemas.task_assignment import TaskWatcher
-from typing import ClassVar # Import ClassVar for internal fields
 
 
 class TaskStatus(str, Enum):
@@ -34,7 +33,7 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.not_started
     priority: PriorityLevel = PriorityLevel.medium
     due_date: Optional[datetime] = None
-    is_completed: bool = False # Retain for explicit input, but will be overridden by status
+    is_completed: bool = False  # Retain for explicit input, but will be overridden by status
     estimated_time: Optional[float] = 0.25
     actual_time: Optional[float] = 0.25
     tags: List[str] = []
@@ -43,7 +42,7 @@ class TaskCreate(BaseModel):
 
     class Config:
         orm_mode = True
-        model_config = {"from_attributes": True} # Added for Pydantic V2 compatibility
+        model_config = {"from_attributes": True}  # Added for Pydantic V2 compatibility
 
     # Validator to set is_completed based on status
     @model_validator(mode='after')
@@ -51,7 +50,7 @@ class TaskCreate(BaseModel):
         if self.status == TaskStatus.completed:
             self.is_completed = True
         else:
-            self.is_completed = False # Explicitly set to False if not completed
+            self.is_completed = False  # Explicitly set to False if not completed
         return self
 
 
@@ -70,7 +69,7 @@ class TaskRead(BaseModel):
     title: str
     description: Optional[str]
     status: TaskStatus
-    is_completed: bool # This will be consistent with 'status' due to backend validation
+    is_completed: bool  # This will be consistent with 'status' due to backend validation
     priority: PriorityLevel
     due_date: Optional[datetime]
     created_at: datetime
@@ -98,13 +97,13 @@ TaskRead.model_rebuild()
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[TaskStatus] = None # Allow updating status
+    status: Optional[TaskStatus] = None  # Allow updating status
     tags: Optional[List[str]] = None
     due_date: Optional[datetime] = None
     estimated_time: Optional[float] = None
     actual_time: Optional[float] = None
     priority: Optional[PriorityLevel] = None
-    is_completed: Optional[bool] = None # Will be overridden if status is provided
+    is_completed: Optional[bool] = None  # Will be overridden if status is provided
     dependency_ids: Optional[List[str]] = None
     project_id: Optional[str] = None
 
@@ -120,4 +119,3 @@ class TaskUpdate(BaseModel):
             self.is_completed = (self.status == TaskStatus.completed)
         # If status is not provided in the update, keep the existing is_completed value
         return self
-

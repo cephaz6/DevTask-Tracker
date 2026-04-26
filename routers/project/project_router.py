@@ -57,7 +57,7 @@ def list_projects(
 
 
 # Get only my projects
-@router.get("/my-projects", response_model=List[ProjectRead]) # ProjectRead needs to correctly define members and tasks
+@router.get("/my-projects", response_model=List[ProjectRead])
 def get_my_projects(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -67,8 +67,8 @@ def get_my_projects(
         owned_projects_query = (
             session.query(Project)
             .options(
-                selectinload(Project.members).joinedload(ProjectMember.user), # Load members and their associated user details
-                selectinload(Project.tasks) # Load tasks
+                selectinload(Project.members).joinedload(ProjectMember.user),  # Load members and their associated user details
+                selectinload(Project.tasks)  # Load tasks
             )
             .filter(Project.owner_id == current_user.user_id)
         )
@@ -77,24 +77,23 @@ def get_my_projects(
         member_projects_query = (
             session.query(Project)
             .options(
-                selectinload(Project.members).joinedload(ProjectMember.user), # Load members and their associated user details
-                selectinload(Project.tasks) # Load tasks
+                selectinload(Project.members).joinedload(ProjectMember.user),  # Load members and their associated user details
+                selectinload(Project.tasks)  # Load tasks
             )
             .join(ProjectMember, Project.id == ProjectMember.project_id)
             .filter(ProjectMember.user_id == current_user.user_id)
-            # .filter(Project.owner_id != current_user.user_id) # Optional: if you want to exclude owned projects from this specific query result
         )
 
         all_projects_raw = owned_projects_query.all() + member_projects_query.all()
-        
+
         unique_projects_map = {p.id: p for p in all_projects_raw}
         all_projects = list(unique_projects_map.values())
 
-        return all_projects # SQLAlchemy models with relationships loaded will be serialized by Pydantic
+        return all_projects  # SQLAlchemy models with relationships loaded will be serialized by Pydantic
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    
+
 # Get a specific project detail
 @router.get("/{project_id}/details", response_model=ProjectRead)
 def get_project_details(
@@ -138,7 +137,6 @@ def get_project_details(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 # Get a specific project by ID    `GET /projects/{project_id}`
