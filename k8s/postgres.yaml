@@ -1,3 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secrets
+type: Opaque
+stringData:
+  POSTGRES_USER: devtask_user
+  POSTGRES_PASSWORD: devtask_pass_123
+  POSTGRES_DB: devtask
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,13 +27,9 @@ spec:
           image: postgres:16
           ports:
             - containerPort: 5432
-          env:
-            - name: POSTGRES_DB
-              value: devtask
-            - name: POSTGRES_USER
-              value: devtask_user
-            - name: POSTGRES_PASSWORD
-              value: devtask_pass_123
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data

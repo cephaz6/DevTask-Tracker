@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: devtask-client:v3
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/cephaz6/devtask-client:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           resources:
