@@ -81,3 +81,24 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/devtask-api:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/devtask-api:latest
+
+  deploy:
+    runs-on: [self-hosted, kind-cluster]
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/postgres.yaml
+          kubectl apply -f k8s/backend.yaml
+          kubectl apply -f k8s/frontend.yaml
+
+      - name: Wait for backend rollout
+        run: kubectl rollout status deployment/backend --timeout=120s
+
+      - name: Wait for frontend rollout
+        run: kubectl rollout status deployment/frontend --timeout=120s
+
+      - name: Show pod status
+        run: kubectl get pods
