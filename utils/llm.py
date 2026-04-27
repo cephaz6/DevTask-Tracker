@@ -63,7 +63,8 @@ def call_gpt_from_user_prompt(prompt: str) -> GeneratedProject:
     system_message = f"""
 You are a professional AI project planner.
 
-Today's date is {today}. If the user says "starting today" or gives a vague date like "June 30th", assume they mean the nearest future instance of that date. Never use dates in the past.
+Today's date is {today}. If the user says "starting today" or gives a vague date like "June 30th",
+assume they mean the nearest future instance of that date. Never use dates in the past.
 
 Your job is to:
 - Understand what the user wants to learn or achieve

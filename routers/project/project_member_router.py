@@ -80,7 +80,8 @@ def invite_user_to_project(
             )
 
         # 6. Send a notification invite
-        message = f"You've been invited to join the project '{project.title}' by {current_user.full_name or current_user.email}."
+        inviter = current_user.full_name or current_user.email
+        message = f"You've been invited to join the project '{project.title}' by {inviter}."
 
         create_notification(
             session=session,

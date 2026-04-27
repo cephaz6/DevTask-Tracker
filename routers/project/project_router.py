@@ -67,7 +67,7 @@ def get_my_projects(
         owned_projects_query = (
             session.query(Project)
             .options(
-                selectinload(Project.members).joinedload(ProjectMember.user),  # Load members and their associated user details
+                selectinload(Project.members).joinedload(ProjectMember.user),
                 selectinload(Project.tasks)  # Load tasks
             )
             .filter(Project.owner_id == current_user.user_id)
@@ -77,7 +77,7 @@ def get_my_projects(
         member_projects_query = (
             session.query(Project)
             .options(
-                selectinload(Project.members).joinedload(ProjectMember.user),  # Load members and their associated user details
+                selectinload(Project.members).joinedload(ProjectMember.user),
                 selectinload(Project.tasks)  # Load tasks
             )
             .join(ProjectMember, Project.id == ProjectMember.project_id)
